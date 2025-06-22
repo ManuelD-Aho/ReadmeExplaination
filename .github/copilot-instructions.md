@@ -1,1296 +1,1382 @@
-# **Documentation Technique Exhaustive du Système "GestionMySoutenance"**
+**Système d'Information Fonctionnel de "GestionMySoutenance" **
 
-## **Introduction Générale**
+L'application "GestionMySoutenance" est une plateforme web intégrée et dynamique, méticuleusement conçue pour orchestrer et numériser l'ensemble des processus relatifs à la gestion des rapports académiques au sein d'un établissement d'enseignement supérieur. Son architecture vise à interconnecter de manière fluide les différents acteurs essentiels à ce cycle
 
-### **Présentation du Système "GestionMySoutenance"**
+: les étudiants en phase de finalisation de leurs études, les membres experts de la commission pédagogique chargée de la validation, le personnel administratif responsable du contrôle de la conformité documentaire et de la gestion rigoureuse de la scolarité, ainsi que l'administrateur système, gardien de l'intégrité et de la performance de la plateforme. L'ambition première de
 
-Le système "GestionMySoutenance" est une application web dynamique conçue pour la gestion numérisée et centralisée de l'ensemble du processus de soutenance académique. Son objectif principal est d'offrir une plateforme unifiée pour les différents acteurs impliqués dans ce processus, incluant les étudiants, le personnel administratif, les enseignants (notamment ceux agissant en tant que membres de commissions de validation), et les administrateurs système. L'application vise à structurer, suivre et archiver les étapes clés, depuis la soumission des rapports par les étudiants jusqu'à la validation finale par les instances pédagogiques, en passant par les vérifications de conformité administrative et les évaluations. <sup>1</sup>
+"GestionMySoutenance" est de garantir un niveau optimal de transparence, d'efficacité opérationnelle, de traçabilité infaillible et de conformité réglementaire à chaque jalon du parcours, depuis l'initiative de la soumission du rapport par l'étudiant jusqu'à sa validation formelle par les instances compétentes.
 
-### **Aperçu de l'Architecture Technique Globale**
+Un aspect fondamental du système est sa gestion fine de l'année académique. Bien plus qu'une simple balise temporelle, l'année académique active conditionne une multitude d'opérations et permet une historisation précise des données et des rôles. Le système est capable de tracer les évolutions de carrière du personnel enseignant et administratif. Ainsi, si un enseignant change de grade ou de fonction d'une année académique à l'autre \(par exemple, passant de Maître de Conférences à Professeur, ou étant nommé responsable d'une spécialité\), ces transitions sont enregistrées avec leur date d'effet. De même, si un membre du personnel administratif change de poste ou quitte l'établissement, cette information est mise à jour, garantissant que les responsabilités passées et présentes sont clairement identifiables. Le système est conçu pour générer des notifications automatiques concernant ces changements importants aux parties concernées, par exemple si un nouveau responsable de conformité est assigné ou si la composition d'une commission d'évaluation est modifiée pour une nouvelle année.
 
-L'application "GestionMySoutenance" repose sur une pile technologique moderne et éprouvée pour le développement web. Le langage principal côté serveur est PHP, spécifiquement en version 8.2. Pour la présentation et l'interaction côté client, le système utilise HTML, CSS pur, et JavaScript pur, indiquant une approche qui privilégie la maîtrise directe des technologies de base sans l'intermédiaire de frameworks frontend lourds. \[UserQuery\]
+Pour les étudiants, notamment ceux en fin de cursus \(typiquement en Master 2\), la gestion de l'année académique par rapport à l'étape de la soutenance est particulièrement nuancée. Le système reconnaît que tous les étudiants inscrits en dernière année ne parviennent pas nécessairement à soumettre ou à valider leur rapport dans le courant de cette même année.
 
-Les dépendances clés gérées via Composer incluent :
-
-- vlucas/phpdotenv pour la gestion des variables d'environnement, ce qui est une bonne pratique pour la configuration sécurisée et flexible de l'application selon les environnements (développement, test, production).
-- nikic/fast-route pour le routage des requêtes HTTP, permettant une gestion claire et performante des URL et de leur association aux contrôleurs.
-- phpmailer/phpmailer pour l'envoi d'emails, une fonctionnalité essentielle pour les notifications et communications système.
-- robthree/twofactorauth et bacon/bacon-qr-code pour la mise en œuvre de l'authentification à deux facteurs (2FA), renforçant la sécurité des comptes utilisateurs.
-- tecnickcom/tcpdf pour la génération de documents PDF, cruciale pour la production d'attestations, de procès-verbaux et autres documents officiels.
-- phpoffice/phpspreadsheet pour la manipulation de feuilles de calcul, probablement utilisée pour les fonctionnalités d'import/export de données. \[UserQuery\]
+Par conséquent, "GestionMySoutenance" permet de gérer des cohortes d'étudiants. Un étudiant de Master 2 de l'année académique N peut très bien être autorisé à soumettre son rapport pendant l'année N\+1. Cependant, pour encourager la finalisation des études dans des délais raisonnables, l'établissement peut instituer une politique de pénalités progressives. Si un étudiant n'a pas complété l'étape de la soutenance après une période définie \(par exemple, deux ans après la fin nominale de son Master 2\), le système peut automatiquement identifier sa situation. Avant de pouvoir soumettre son rapport via la plateforme, cet étudiant sera notifié de l'existence de pénalités financières ou administratives à régulariser. Le montant ou la nature de ces pénalités peuvent être paramétrés pour augmenter avec le nombre d'années de retard. Le Responsable Scolarité sera l'interlocuteur pour la gestion et la confirmation du règlement de ces pénalités, et ce n'est qu'après cette régularisation que l'étudiant retrouvera la pleine capacité de soumettre son travail via "GestionMySoutenance". Cette gestion des pénalités est tracée et documentée dans le dossier de l'étudiant.
 
-L'environnement de déploiement est conteneurisé à l'aide de Docker, avec une configuration pour un serveur web Apache. L'accès à la base de données MySQL (ou compatible) est assuré par les extensions PHP ext-pdo et ext-mysqli. Les autres extensions PHP listées (ext-mbstring, ext-ctype, ext-json, ext-intl, ext-gd, ext-zip) sont courantes et nécessaires pour la manipulation de chaînes de caractères multi-octets, la validation de types de caractères, la gestion du format JSON, l'internationalisation, le traitement d'images, et la gestion d'archives ZIP. \[UserQuery\]
 
-La structure des répertoires du projet, notamment avec les dossiers Public/ (contenant le point d'entrée index.php et les assets), routes/ (pour web.php définissant les routes), et src/ (comprenant Backend/, Config/, et Frontend/views/), suggère une organisation claire et une séparation des préoccupations. \[UserQuery\]
 
-### **Principes de Conception Fondamentaux**
+**Partie I : Module Commission de Validation**
 
-L'analyse de la structure du projet et des documents descriptifs met en lumière plusieurs principes de conception fondamentaux qui sous-tendent le système "GestionMySoutenance".
+Le Module Commission de Validation est l'environnement de travail sécurisé dédié aux membres de la commission pédagogique, dont la mission est d'évaluer la qualité académique
 
-- **Architecture MVC (Modèle-Vue-Contrôleur)** : La structure des répertoires avec src/Backend/Controller, src/Backend/Model, et src/Frontend/views indique clairement l'adoption du patron de conception MVC. <sup>1</sup> Ce choix architectural est déterminant pour la qualité et la pérennité de l'application. Il favorise une séparation nette des responsabilités :
-    1. Le **Modèle** est responsable de la logique métier et de l'interaction avec la base de données. Par exemple, des classes comme Utilisateur.php dans src/Backend/Model/ gèrent les opérations CRUD pour l'entité utilisateur et encapsulent les règles de validation associées. <sup>1</sup>
-    2. La **Vue** se charge de la présentation des données à l'utilisateur. Les fichiers dans src/Frontend/views/, tels que Auth/login.php ou Administration/dashboard_admin.php, contiennent le code HTML et la logique d'affichage minimale. <sup>1</sup>
-    3. Le **Contrôleur**, situé dans src/Backend/Controller/ (par exemple, AuthentificationController.php ou Administration/AdminDashboardController.php), reçoit les requêtes HTTP, interagit avec le Modèle pour récupérer ou modifier les données, puis sélectionne la Vue appropriée pour renvoyer une réponse. <sup>1</sup> Cette séparation des préoccupations est une pratique standard pour les applications web robustes, améliorant la maintenabilité, la testabilité, et permettant un développement plus organisé, potentiellement en parallèle par différentes équipes. <sup>1</sup>
-- **Gestion Textuelle des Rapports** : Une caractéristique distinctive du système est que les étudiants ne téléversent pas de fichiers pour le corps principal de leur rapport. Au lieu de cela, ils saisissent le contenu textuellement via des formulaires et des éditeurs de texte enrichi intégrés à la plateforme. <sup>1</sup> Cette approche a des implications significatives :
-  - Elle simplifie considérablement la gestion des fichiers côté serveur et réduit les risques de sécurité associés aux téléversements de documents (par exemple, l'introduction de malwares via des fichiers bureautiques complexes).
-  - La recherche plein texte dans le contenu des rapports devient techniquement plus aisée à implémenter et plus performante.
-  - La table document_soumis reflète cette approche en stockant le contenu dans un champ contenu_textuel (probablement de type LONGTEXT en SQL) plutôt qu'un chemin vers un fichier binaire, pour les sections principales du rapport. <sup>1</sup> L'Agent de Contrôle de Conformité examine ce contenu_textuel directement dans l'interface de vérification. <sup>1</sup>
-  - Cependant, cette méthode peut imposer des contraintes sur le formatage et la présentation du rapport par l'étudiant, qui pourrait être limité par les capacités de l'éditeur de texte fourni, notamment pour l'intégration de graphiques complexes ou de mises en page très spécifiques.
-- **Génération Centralisée de Documents PDF** : L'utilisation de la bibliothèque tecnickcom/tcpdf indique une stratégie de génération centralisée des documents officiels au format PDF. <sup>1</sup> Cette approche est essentielle pour garantir la cohérence, l'uniformité et le respect du branding de l'établissement pour tous les documents émis (attestations, procès-verbaux, relevés de notes, etc.). Le service ServiceDocumentGenerator.php est identifié comme le composant clé responsable de cette fonctionnalité. <sup>1</sup>
-  - Les modèles de ces documents, probablement au format HTML/CSS, sont gérés par l'Administrateur Système (via la section D.3.1 du Module Administration). <sup>1</sup>
-  - Le ServiceDocumentGenerator récupère les données pertinentes de la base de données et les fusionne avec le modèle sélectionné. <sup>1</sup>
-  - La bibliothèque TCPDF est ensuite utilisée pour convertir ce contenu dynamique en un fichier PDF standardisé, prêt à être téléchargé ou archivé.
-- **Sécurité via Contrôle d'Accès Basé sur les Rôles (RBAC)** : Le système implémente un mécanisme RBAC robuste pour gérer les permissions. Ceci est visible à travers l'utilisation des tables groupe_utilisateur, traitement, et de la table de jonction rattacher. <sup>1</sup> Ce principe de sécurité vise à accorder aux utilisateurs uniquement les droits strictement nécessaires à l'accomplissement de leurs tâches (principe du moindre privilège). <sup>1</sup>
-  - La table type_utilisateur définit la nature fondamentale du compte utilisateur (ex: Étudiant, Personnel Administratif).
-  - La table groupe_utilisateur définit des rôles fonctionnels plus spécifiques (ex: Agent de Conformité, Membre de Commission).
-  - La table traitement catalogue chaque action ou fonctionnalité atomique du système qui est soumise à un contrôle de permission.
-  - La table rattacher établit le lien entre un groupe_utilisateur et les traitement auxquels il a accès.
-  - Un service dédié, tel qu'un ServicePermissions (implicite dans la conception), est chargé de vérifier, pour chaque action sensible, si l'utilisateur connecté (via son appartenance à un groupe) possède le droit d'exécuter le traitement demandé. <sup>1</sup>
-- **Audit Détaillé des Actions** : La table enregistrer joue un rôle central dans la traçabilité des opérations au sein du système. <sup>1</sup> Ce principe d'audit détaillé est fondamental pour la sécurité, la résolution d'incidents, et la conformité réglementaire.
-  - Chaque action significative (création, modification, suppression d'entités, changements de statut, connexions) est enregistrée.
-  - Un enregistrement typique dans la table enregistrer contient des informations cruciales : l'identifiant de l'utilisateur ayant effectué l'action (numero_utilisateur), le type d'action (id_action), la date et l'heure (date_action), l'entité concernée (type_entite_concernee, id_entite_concernee), et, de manière très importante, un champ details_action au format JSON. Ce dernier permet de stocker des informations contextuelles riches et granulaires sur l'action, telles que les anciennes et nouvelles valeurs lors d'une modification. <sup>1</sup>
-  - L'adresse IP et le User-Agent sont également capturés, fournissant un contexte technique supplémentaire.
-- **Architecture Modulaire** : L'application est clairement structurée en modules fonctionnels distincts : Administration, Personnel Administratif, Étudiant, et Commission de Validation. <sup>1</sup> Cette modularité est un atout majeur pour la gestion de la complexité du système.
-  - Chaque module possède ses propres contrôleurs, vues, et potentiellement des modèles ou services spécifiques, ce qui facilite le développement, la maintenance et l'évolution de chaque partie de manière relativement indépendante.
-  - Les interactions entre ces modules sont gérées par des appels à des services bien définis ou par des modifications d'état dans la base de données, favorisant un couplage lâche.
-  - Cela permet une meilleure répartition des responsabilités fonctionnelles et une compréhension plus segmentée et donc plus aisée du système global.
-- **Services Centralisés pour Logique Transversale** : L'utilisation de classes de service dédiées (par exemple, ServiceAuthentification.php, ServiceNotification.php, ServiceRapport.php, ServiceDocumentGenerator.php) pour encapsuler la logique métier complexe ou les fonctionnalités partagées entre plusieurs modules est une pratique de conception robuste. <sup>1</sup>
-  - Cette approche favorise la réutilisabilité du code et la cohérence dans l'application des règles métier. Par exemple, ServiceAuthentification centralise toute la logique liée à la connexion, à la gestion des sessions, et à la création/activation des comptes. <sup>1</sup> De même, ServiceNotification et ServiceEmail gèrent de manière unifiée l'envoi de toutes les communications. <sup>1</sup>
-  - Les contrôleurs des différents modules font appel à ces services pour exécuter des opérations métier, évitant ainsi la duplication de logique et la dispersion des règles de gestion.
+et scientifique des rapports soumis par les étudiants, après que ceux-ci aient franchi une première étape de vérification de conformité administrative. L'accès à ce module requiert une authentification spécifique, et chaque membre est accueilli par une interface présentant clairement ses responsabilités et les tâches qui lui incombent. Typiquement, cela inclut une liste des rapports étudiants actuellement en attente de son évaluation ou de sa participation au vote, ainsi qu'un aperçu des procès-verbaux de validation de rapport qui sont en cours de rédaction ou qui nécessitent son approbation.
 
-Ces principes architecturaux et de conception confèrent au système "GestionMySoutenance" une base solide pour répondre aux exigences fonctionnelles tout en visant la maintenabilité, la sécurité et l'évolutivité.
-
-## **Partie I : Module Administration**
-
-Le Module Administration de "GestionMySoutenance" est le centre de contrôle névralgique de la plateforme. Il est conçu pour offrir aux administrateurs système un ensemble complet d'outils pour superviser, configurer, maintenir et sécuriser l'ensemble de l'application.
-
-### **A. Introduction et Objectifs du Module Administration** <sup>1</sup>
-
-L'objectif stratégique fondamental du Module Administration est de garantir la performance, la stabilité, la sécurité et la conformité de la plateforme "GestionMySoutenance" sur le long terme. Il vise également à s'assurer que les processus métier critiques, tels que la soumission et la validation des rapports de soutenance, se déroulent sans heurts et que les données historiques sont correctement gérées, préservées et accessibles à des fins d'audit ou d'analyse. <sup>1</sup>
-
-Sur le plan opérationnel, ce module fournit à l'Administrateur Système les interfaces et les fonctionnalités nécessaires pour :
-
-- Superviser l'état général de la plateforme et l'activité des utilisateurs.
-- Configurer les paramètres globaux de l'application et les règles métier.
-- Gérer l'ensemble des comptes utilisateurs (étudiants, personnel administratif, enseignants) et leurs droits d'accès.
-- Maintenir les référentiels de données (années académiques, niveaux d'étude, statuts, etc.).
-- Intervenir en cas de problème technique ou de nécessité de correction de données.
-- Produire des rapports et des analyses sur l'utilisation du système.
-
-Le rôle de l'Administrateur Système est donc central ; il dispose d'un accès complet à toutes les fonctionnalités du module et est le garant de la configuration globale, de la sécurité et de la maintenance de la plateforme.
-
-### **B. Interface Utilisateur Principale (Header, Sidebar)** <sup>1</sup>
-
-L'interface utilisateur du Module Administration est conçue pour être à la fois complète et intuitive, permettant à l'administrateur d'accéder rapidement aux nombreuses fonctionnalités.
-
-**1\. Header Proposé de l'Interface d'Administration**
-
-L'en-tête de l'interface d'administration est un élément constant, visible sur toutes les pages du module, fournissant des informations contextuelles et des actions globales.
-
-- **Intitulé** : Le titre "Panneau de Contrôle Principal - GestionMySoutenance" identifie clairement la section. "GestionMySoutenance" ancre l'outil dans le nom global du projet, tandis que "Panneau de Contrôle Principal" indique sa fonction centrale de supervision et de configuration. <sup>1</sup>
-- **Fonctionnalités associées au header** : <sup>1</sup>
-  - **Logo de l'Institution/Application** : Un élément visuel de branding.
-  - **Nom de l'Administrateur connecté** : Affiche le nom et prénom de l'utilisateur administrateur, récupéré de utilisateur.login_utilisateur ou via une jointure avec personnel_administratif si l'administrateur possède également un profil détaillé dans cette table.
-  - **Lien vers le profil utilisateur de l'Admin** : Permet à l'administrateur de gérer son propre compte (modification du mot de passe, informations de contact de base).
-  - **Bouton/Lien de Déconnexion** : Assure une déconnexion sécurisée. Cette action invalide la session côté serveur (via ServiceAuthentification.detruireSessionUtilisateur()) et redirige vers la page de connexion. L'action est systématiquement journalisée dans la table enregistrer.
-  - **Indicateur d'Année Académique Active** : Un affichage discret mais essentiel de l'id_annee_academique (ex: "AA_2024_2025") ou du libelle_annee_academique (ex: "2024-2025") actuellement marquée comme est_active = 1 dans la table annee_academique. La présence constante de cette information est cruciale car de nombreuses opérations administratives (gestion des inscriptions, soumissions de rapports, configurations de délais) sont intrinsèquement liées à l'année académique en cours. Ce rappel visuel permanent aide l'administrateur à éviter des erreurs de configuration ou de gestion qui pourraient avoir des conséquences importantes sur le déroulement des processus pour les utilisateurs.
-
-**2\. Sidebar Dynamique et Fonctionnalités Associées**
-
-La barre latérale de navigation (sidebar) est l'outil principal permettant à l'administrateur de naviguer entre les différentes sections et fonctionnalités du module. Elle est conçue pour être claire, bien organisée et exhaustive.
-
-- **Structure hiérarchique** : La sidebar est organisée avec des sections principales de premier niveau, qui peuvent se déployer pour révéler des sous-sections ou des onglets spécifiques si la section principale est complexe. Cette structure arborescente facilite la localisation des fonctionnalités. <sup>1</sup>
-  - **Niveau 1 : Sections Principales** (ex: Tableau de Bord, Gestion des Utilisateurs, Gestion des Habilitations).
-  - **Niveau 2 : Sous-sections ou Onglets Spécifiques** (ex: sous "Gestion des Utilisateurs", on trouve "Étudiants", "Personnel Administratif").
-- **Éléments de la Sidebar et Fonctionnalités Pointées** : Chaque élément de la sidebar est un lien hypertexte qui charge une interface spécifique (une "page" ou un "onglet") du module d'administration. Les icônes associées à chaque libellé aident à une identification visuelle rapide.
-  - **Tableau de Bord Principal** : Lien vers la Section A.
-  - **Gestion des Utilisateurs** : Menu déroulant vers B.0 (Tous les Utilisateurs), B.1 (Étudiants), B.2 (Personnel Administratif), B.3 (Enseignants).
-  - **Gestion des Habilitations** : Menu déroulant vers C.1 (Types Utilisateur), C.2 (Groupes Utilisateur), C.3 (Niveaux d'Accès), C.4.1 (Fonctionnalités/Traitements), C.4.2 (Assignation Permissions).
-  - **Configuration Système** : Menu déroulant vers D.1 (Référentiels, avec un sous-lien direct pour D.1.1 Années Académiques en raison de son importance), D.2 (Paramètres Généraux/Workflow), D.3 (Modèles Documents/Emails).
-  - **Gestion Académique & Administrative (Supervision)** : Menu déroulant vers E.1 (Supervision Inscriptions), E.2 (Supervision Notes), E.3 (Supervision Stages), E.4 (Associations Enseignants).
-  - **Supervision & Maintenance** : Menu déroulant vers F.1 (Suivi Workflows), F.2 (Gestion PV Admin), F.3 (Notifications Système), F.4 (Journaux d'Audit), F.5 (Import/Export Données), F.6 (Maintenance Technique).
-  - **Reporting & Analytique** : Menu déroulant vers G.1 (Générer Rapports), G.2 (Configurer Dashboards).
-- **Adaptabilité et Permissions** : Bien que le rôle d'Administrateur Système ait, par définition, accès à toutes les fonctionnalités, la conception de la sidebar pourrait permettre une adaptation dynamique. Si des rôles d'administrateurs délégués avec des permissions plus restreintes étaient introduits ultérieurement (par exemple, un "Administrateur Scolarité" avec accès uniquement aux sections B.1, E.1, E.2, E.3), la sidebar n'afficherait que les items autorisés pour ce rôle/groupe. Cela impliquerait une vérification des permissions (via le ServicePermissions et la table rattacher) pour chaque item de menu avant son affichage. <sup>1</sup>
-
-La clarté des libellés, l'intuitivité de la structure hiérarchique et la réactivité de la navigation sont des aspects essentiels à la bonne conception de cette sidebar pour garantir l'efficacité de l'administrateur.
-
-### **C. Fonctionnalités Détaillées (par Onglet/Section)**
-
-#### **A. Tableau de Bord Principal** <sup>1</sup>
-
-Le Tableau de Bord Principal est la page d'accueil du Module Administration. Il offre une synthèse visuelle et immédiate de l'état de santé et de l'activité de la plateforme.
-
-- **1\. Objectif** : Fournir une vue d'ensemble en temps réel (ou quasi-réel) des métriques vitales, des anomalies potentielles, et des raccourcis vers les tâches administratives fréquentes. Il vise à réduire le temps de diagnostic et à faciliter une gestion proactive du système. <sup>1</sup>
-- **2\. Interactions et Interface** : L'interface est typiquement organisée en "widgets" ou "cartes" thématiques. <sup>1</sup>
-  - **A.1. Bloc/Widget : Statistiques d'Utilisation Clés et d'Activité** :
-    - **A.1.1. Nombre Total d'Utilisateurs Actifs et Répartition** : Affiche le nombre total d'utilisateurs avec statut_compte = 'actif' et une répartition par libelle_type_utilisateur (Étudiants, Enseignants, Personnel Administratif, Administrateurs).
-      - _Logique SQL_ : SELECT COUNT(numero_utilisateur) FROM utilisateur WHERE statut_compte = 'actif'; et SELECT tu.libelle_type_utilisateur, COUNT(u.numero_utilisateur) AS nombre_actifs FROM utilisateur u JOIN type_utilisateur tu ON u.id_type_utilisateur = tu.id_type_utilisateur WHERE u.statut_compte = 'actif' GROUP BY tu.id_type_utilisateur, tu.libelle_type_utilisateur; <sup>1</sup>
-    - **A.1.2. Statistiques sur les Rapports de Soutenance** : Pour l'année académique sélectionnée (active par défaut), affiche un diagramme du nombre de rapports par libelle_statut_rapport (ex: 'Soumis', 'Conforme', 'Validé').
-      - _Logique SQL_ : SELECT sr.libelle_statut_rapport, COUNT(r.id_rapport_etudiant) AS nombre_rapports FROM rapport_etudiant r JOIN statut_rapport_ref sr ON r.id_statut_rapport = sr.id_statut_rapport JOIN etudiant etu ON r.numero_carte_etudiant = etu.numero_carte_etudiant JOIN inscrire i ON etu.numero_carte_etudiant = i.numero_carte_etudiant WHERE i.id_annee_academique = '' GROUP BY sr.id_statut_rapport, sr.libelle_statut_rapport ORDER BY sr.etape_workflow; <sup>1</sup>
-    - **A.1.3. Volume de Données et Indicateurs de Stockage** : Taille de la base de données, nombre total de document_soumis, espace disque utilisé par ces documents (via SUM(taille_fichier)). <sup>1</sup>
-    - **A.1.4. Nombre de Nouvelles Inscriptions** : Pour l'année sélectionnée/active.
-      - _Logique SQL_ : SELECT COUNT(DISTINCT i.numero_carte_etudiant) FROM inscrire i WHERE i.id_annee_academique = ''; <sup>1</sup>
-    - **A.1.5. Indicateurs d'Activité Récente (Optionnel)** : Nombre de connexions ou de nouveaux rapports soumis sur les dernières 24h. <sup>1</sup>
-  - **A.2. Bloc/Widget : Alertes Système Critiques et Notifications Administratives** :
-    - **A.2.1. État de la Base de Données** : Indicateur simple "OK" ou "ERREUR". <sup>1</sup>
-    - **A.2.2. Alertes de Performance Serveur** : Si un monitoring externe est interfacé (CPU, RAM, Disque). <sup>1</sup>
-    - **A.2.3. Alertes de Sécurité** : Nombre de comptes utilisateurs actuellement bloqués (SELECT COUNT(\*) FROM utilisateur WHERE statut_compte = 'bloque';). <sup>1</sup>
-    - **A.2.4. État des Processus Automatisés (Tâches CRON)** : Statut du dernier lancement des tâches majeures (nettoyage, rappels). <sup>1</sup>
-    - **A.2.5. Années Académiques non Clôturées** : Alerte si une annee_academique dont la date_fin est passée est toujours marquée comme est_active = 1. <sup>1</sup>
-      - La proactivité permise par ces alertes est un atout majeur. Par exemple, l'identification rapide des comptes bloqués peut signaler une vague de tentatives de connexion infructueuses, potentiellement malveillantes, ou un problème généralisé d'accès. De même, une tâche CRON qui échoue silencieusement peut impacter des processus de fond (comme l'envoi de rappels importants) ; une alerte sur le tableau de bord permet une intervention rapide. Le suivi des années académiques non clôturées est essentiel pour la bonne gestion du cycle de vie académique et pour éviter que des opérations ne soient effectuées par erreur sur une année révolue.
-  - **A.3. Bloc/Widget : Raccourcis Rapides** : Liens vers les fonctionnalités les plus fréquentes (Gestion des utilisateurs, Configuration année académique, Journaux d'audit, etc.). <sup>1</sup>
-- **3\. Règles Métiers** : L'affichage des statistiques et des données est, par défaut, contextuel à l'année académique active. L'administrateur doit avoir la possibilité de sélectionner une autre année académique pour visualiser les données historiques correspondantes.
-- **4\. Logique Algorithmique et Services** : Les calculs des statistiques reposent principalement sur des requêtes SQL d'agrégation (COUNT, AVG, SUM) exécutées sur les tables utilisateur, rapport_etudiant, inscrire, document_soumis, etc. Ces requêtes doivent être optimisées pour un chargement rapide du tableau de bord. Pour les indicateurs de performance serveur ou l'état des tâches CRON, une interaction avec des services système ou des logs spécifiques peut être nécessaire.
-- **5\. Validations** : Non applicable pour la consultation, mais les actions déclenchées depuis les raccourcis sont soumises aux validations de leurs modules respectifs.
-
-L'optimisation des requêtes SQL pour ce tableau de bord est primordiale pour garantir une expérience utilisateur fluide, surtout avec l'augmentation du volume de données. L'utilisation d'index pertinents sur les colonnes fréquemment utilisées dans les clauses WHERE, JOIN, et GROUP BY est indispensable. Pour les statistiques particulièrement lourdes à calculer, une stratégie d'agrégation précalculée (via des tâches CRON nocturnes par exemple) et stockée dans des tables de résumé pourrait être envisagée pour améliorer la réactivité. <sup>1</sup>
-
-#### **B. Gestion des Utilisateurs** <sup>1</sup>
-
-Cette section est l'une des plus critiques du Module Administration, car elle permet de gérer l'ensemble des comptes utilisateurs et leurs profils associés.
-
-- **Objectif Stratégique** : Donner à l'administrateur une vision consolidée de la population des utilisateurs, permettre d'identifier des tendances, de surveiller l'activité globale des comptes, et de s'assurer de la cohérence de la base utilisateurs. <sup>1</sup>
-- **Objectif Opérationnel** : Fournir un point d'entrée unique pour des recherches rapides sur l'ensemble des utilisateurs, indépendamment de leur type principal, et permettre des actions administratives groupées ou des interventions ciblées. <sup>1</sup>
-
-##### **B.0. Utilisateurs (Vue Générale et Actions Transversales)** <sup>1</sup>
-
-Cette sous-section offre une vue d'ensemble de tous les utilisateurs enregistrés dans le système, quels que soient leurs rôles ou types.
-
-- **Objectif** : Permettre une recherche et des actions administratives sur l'ensemble de la population des utilisateurs.
-- **B.0.1. Zone de Listage Exhaustif de Tous les Utilisateurs** :
-  - **Interface** : Le cœur de cette interface est un tableau de données interactif, paginé et triable, présentant tous les enregistrements de la table utilisateur. Des informations clés issues de tables liées comme type_utilisateur et groupe_utilisateur sont affichées grâce à des jointures SQL. <sup>1</sup>
-  - **SQL Requête de Base (Illustrative)** :  
-        SQL  
-        SELECT u.numero_utilisateur, u.login_utilisateur, u.email_principal,  
-        tu.libelle_type_utilisateur, gu.libelle_groupe_utilisateur,  
-        u.statut_compte, u.date_creation, u.derniere_connexion  
-        FROM utilisateur u  
-        LEFT JOIN type_utilisateur tu ON u.id_type_utilisateur = tu.id_type_utilisateur  
-        LEFT JOIN groupe_utilisateur gu ON u.id_groupe_utilisateur = gu.id_groupe_utilisateur  
-        ORDER BY u.date_creation DESC  
-        LIMIT,;  
-        <sup>1</sup>
-  - **Colonnes Principales Affichées** :
-    - numero_utilisateur (PK de utilisateur) : Identifiant unique interne.
-    - login_utilisateur (UNIQUE) : Identifiant de connexion.
-    - email_principal (UNIQUE) : Email principal pour notifications et récupération de mot de passe.
-    - libelle_type_utilisateur (via type_utilisateur.libelle_type_utilisateur) : Rôle principal (Étudiant, Personnel Admin, etc.).
-    - libelle_groupe_utilisateur (via groupe_utilisateur.libelle_groupe_utilisateur) : Groupe de permissions principal.
-    - statut_compte (ENUM utilisateur.statut_compte) : État du compte ('actif', 'inactif', 'bloque', 'en_attente_validation', 'archive'). Un codage couleur peut être utilisé pour une identification visuelle rapide (ex: actif en vert, bloqué en rouge).
-    - date_creation (utilisateur.date_creation).
-    - derniere_connexion (utilisateur.derniere_connexion, peut être NULL).
-    - **Colonne "Actions"** : Boutons/icônes contextuels par ligne :
-      - "Voir Détails" : Redirige vers la vue détaillée du profil spécifique (B.1, B.2, ou B.3) en fonction de utilisateur.id_type_utilisateur.
-      - "Modifier Compte Utilisateur" : Ouvre un formulaire pour modifier les champs de la table utilisateur (login, email, groupe, statut, etc.).
-      - "Changer Statut Compte" : Permet de changer rapidement le statut_compte avec confirmation. <sup>1</sup>
-  - **Pagination et Tri** : Essentiels pour la performance et l'ergonomie. <sup>1</sup>
-- **B.0.2. Zone de Moteur de Recherche Globale d'Utilisateurs** :
-  - **Interface** : Champs de saisie pour rechercher par numero_utilisateur, login_utilisateur, email_principal. Une recherche par Nom/Prénom est plus complexe car elle nécessite de joindre les tables etudiant, personnel_administratif, et enseignant (qui contiennent les noms/prénoms) avec utilisateur via numero_utilisateur. <sup>1</sup>
-  - **Logique SQL** : Utilisation de LIKE pour les recherches partielles. Pour la recherche par nom/prénom, une approche possible est d'utiliser une UNION de SELECT numero_utilisateur FROM... WHERE nom LIKE... sur les trois tables de profils, puis de filtrer la table utilisateur avec WHERE numero_utilisateur IN (résultat_union).
-- **B.0.3. Panneau de Filtres Avancés** :
-  - **Interface** : Listes déroulantes et sélecteurs de date pour filtrer par id_type_utilisateur, id_groupe_utilisateur, statut_compte, email_valide, preferences_2fa_active, période de date_creation, période de derniere_connexion. <sup>1</sup>
-  - **Logique SQL** : Les critères sélectionnés sont combinés avec AND dans la clause WHERE.
-- **B.0.4. Actions Transversales sur Sélection Multiple d'Utilisateurs** :
-  - **Interface** : Cases à cocher par ligne et "Tout sélectionner". Boutons d'actions de masse. <sup>1</sup>
-  - **B.0.4.1. Changement de Statut en Masse** : Sélection du nouveau statut, confirmation, puis UPDATE utilisateur SET statut_compte = '' WHERE numero_utilisateur IN ('id1', 'id2',...);. Journalisation détaillée. <sup>1</sup>
-  - **B.0.4.2. Envoi de Notifications en Masse** : Sélection d'un template de message ou rédaction ad-hoc. INSERT dans recevoir pour chaque utilisateur et envoi email via ServiceEmail. <sup>1</sup>
-  - **B.0.4.3. Réinitialisation de Mot de Passe en Masse (HAUTEMENT SENSIBLE)** : Génération de token_reset_mdp pour chaque sélectionné, envoi email avec lien. Action très détaillée dans enregistrer. <sup>1</sup>
-    - La sensibilité de cette action réside dans son potentiel d'impact sur un grand nombre de comptes. Une utilisation malveillante ou erronée pourrait compromettre la sécurité ou bloquer l'accès pour de nombreux utilisateurs. Des mécanismes de confirmation robustes, voire une double authentification de l'administrateur effectuant l'action, sont recommandés. La journalisation doit être particulièrement précise, incluant la liste des utilisateurs affectés.
-  - **B.0.4.4. Gestion des Tokens Actifs (Évolution)** : Si des tokens de session JWT ou API sont stockés, une action pour les invalider. <sup>1</sup>
-- **B.0.5. Section Résumé : Vue d'Ensemble des Types et Groupes d'Utilisateurs** :
-  - **Interface** : Deux petits tableaux affichant le nombre d'utilisateurs par libelle_type_utilisateur et par libelle_groupe_utilisateur. <sup>1</sup>
-  - **Logique SQL** : SELECT tu.libelle_type_utilisateur, COUNT(u.numero_utilisateur) FROM type_utilisateur tu LEFT JOIN utilisateur u ON tu.id_type_utilisateur = u.id_type_utilisateur GROUP BY tu.id_type_utilisateur, tu.libelle_type_utilisateur; (et similaire pour les groupes).
-- **Tables SQL Primordialement Impliquées pour B.0** : utilisateur, type_utilisateur, groupe_utilisateur, etudiant, personnel_administratif, enseignant, enregistrer, message, recevoir. <sup>1</sup>
-- **Considérations Spécifiques pour B.0** :
-  - **Performance et Indexation** : Des index composites sur utilisateur (ex: sur (id_type_utilisateur, statut_compte)) et des index sur les champs de nom/prénom des tables de profil sont nécessaires pour optimiser les recherches complexes. L'analyse des requêtes via EXPLAIN est recommandée. <sup>1</sup>
-  - **Stratégie de Génération des IDs VARCHAR** : La logique PHP doit garantir l'unicité et suivre une convention pour tous les identifiants générés manuellement (ex: numero_utilisateur, id_type_utilisateur). <sup>1</sup>
-
-##### **B.1. Étudiants (gestion spécifique via etudiant, utilisateur, et tables académiques associées)** <sup>1</sup>
-
-Cette section est dédiée à la gestion complète des profils et des comptes des étudiants.
-
-- **Objectifs** : Assurer la gestion complète du cycle de vie des étudiants, de la création à l'archivage. Fournir des outils pour lister, rechercher, filtrer, créer, modifier et gérer le statut des comptes étudiants, et consulter leurs informations académiques. <sup>1</sup>
-- **B.1.1. Listage des Étudiants** : <sup>1</sup>
-  - **Interface** : Tableau paginé et triable des étudiants (etudiant joint à utilisateur).
-  - **Colonnes Essentielles** : numero_carte_etudiant (PK etudiant), nom_etudiant, prenom_etudiant, numero_utilisateur, login_utilisateur, email_principal, statut_compte, "Dernière Année d'Inscription" (calculée via inscrire et annee_academique), "Dernier Niveau Inscrit" (via inscrire et niveau_etude), date_creation_compte.
-  - **Actions Contextuelles** : "Voir Profil Complet", "Modifier Profil Étudiant", "Modifier Compte Utilisateur", "Gérer Inscriptions", "Voir Rapports Soumis", "Désactiver/Archiver Compte".
-- **B.1.2. Moteur de Filtrage et de Recherche Avancée pour les Étudiants** : <sup>1</sup>
-  - **Interface** : Formulaire de recherche/filtre.
-  - **Champs de Recherche Directe** : numero_carte_etudiant, nom/prenom étudiant, numero_utilisateur, login_utilisateur, email_principal, email_contact_secondaire.
-  - **Filtres Combinables** : utilisateur.statut_compte, inscrire.id_niveau_etude (pour année active), inscrire.id_annee_academique, utilisateur.id_groupe_utilisateur, inscrire.id_statut_paiement (pour année active), rapport_etudiant.id_statut_rapport (pour année active), existence de stage enregistré (faire_stage).
-- **B.1.3. Création d'un Nouvel Étudiant (Workflow Détaillé)** : <sup>1</sup>
-  - **Déclenchement** : Bouton "Créer Nouvel Étudiant".
-  - **Interface du Formulaire de Création** : Structuré en "Informations Personnelles (Profil Étudiant)" et "Informations du Compte Utilisateur".
-  - **Étape 1 : Saisie Informations Profil Étudiant (table etudiant)** : numero_carte_etudiant (PK, unique), nom, prenom, date_naissance, lieu_naissance, pays_naissance, nationalite, sexe, adresse_postale, ville, code_postal, telephone, email_contact_secondaire, contact_urgence_nom, contact_urgence_telephone, contact_urgence_relation.
-  - **Étape 2 : Saisie Informations Compte Utilisateur (table utilisateur)** : login_utilisateur (unique), email_principal (unique), Mot de Passe Initial (généré ou saisi, haché), id_groupe_utilisateur (défaut 'GRP_ETUDIANT'), id_niveau_acces_donne (défaut niveau étudiant), statut_compte ('actif' ou 'en_attente_validation'), photo_profil (optionnel).
-  - **Étape 3 : Traitement Côté Serveur (Logique PHP)** :
-        1. Validation approfondie (unicité numero_carte_etudiant, login_utilisateur, email_principal).
-        2. Génération numero_utilisateur unique (ex: "ETU_" + UUID).
-        3. Hachage du mot de passe (password_hash()).
-        4. id_type_utilisateur fixé à 'TYPE_ETUD'. Génération token_validation_email si statut_compte = 'en_attente_validation'.
-        5. Début de transaction DB.
-        6. INSERT INTO utilisateur.
-        7. INSERT INTO etudiant (lié au numero_utilisateur).
-        8. Journalisation dans enregistrer.
-        9. COMMIT / ROLLBACK.
-        10. Confirmation à l'admin.
-        11. Notification email à l'étudiant (via ServiceEmail et ServiceNotification) avec identifiants et lien de validation/définition MDP. <sup>1</sup>
-  - **Gestion des Prérequis pour Accès Plateforme** : La création du profil/compte par l'Admin peut précéder la validation des prérequis (scolarité à jour, stage effectué). Cependant, le ServiceAuthentification vérifiera ces prérequis avant d'autoriser la _connexion_ effective de l'étudiant, même si son statut_compte est 'actif'. Le Responsable Scolarité, lui, est bloqué lors de sa tentative de "Générer Compte Étudiant" si ces prérequis ne sont pas remplis dans le système. <sup>1</sup> Cette distinction est importante : l'admin peut anticiper la création, mais l'accès fonctionnel de l'étudiant reste conditionné.
-- **B.1.4. Vue Détaillée du Profil Étudiant (Consultation Approfondie)** : <sup>1</sup>
-  - **Accès** : Via lien "Voir Profil Complet" ou clic sur numero_carte_etudiant.
-  - **Objectif** : Présenter de manière exhaustive toutes les informations relatives à un étudiant spécifique.
-  - **Structure de la Page** :
-        1. En-tête : Nom, prénom, numero_carte_etudiant, photo, statut. Boutons d'action.
-        2. Informations Personnelles Détaillées (de etudiant, lecture seule ici).
-        3. Informations du Compte Utilisateur (de utilisateur et tables liées : type, groupe, niveau d'accès, dates, 2FA).
-        4. Historique des Inscriptions Académiques (tableau de inscrire avec libellés).
-        5. Historique des Rapports de Soutenance Soumis (tableau de rapport_etudiant avec statuts).
-        6. Historique des Réclamations (tableau de reclamation, si droits admin).
-        7. Aperçu des Notes (tableau de evaluer, si droits admin).
-  - **Considérations** : Performance (lazy loading pour sections lourdes), autorisations d'affichage par section, navigation (fil d'Ariane).
-- **B.1.5. Modification du Profil Étudiant (etudiant) et du Compte Utilisateur (utilisateur) Associé** : <sup>1</sup>
-  - **Accès** : Via boutons "Modifier Profil Étudiant" ou "Modifier Compte Utilisateur".
-  - **Objectif** : Permettre la correction et la mise à jour des informations.
-  - **Structure du Formulaire de Modification** : Onglets ou sections "Informations Personnelles Étudiant" et "Gestion du Compte Utilisateur", pré-remplis.
-    - **Partie 1 (Profil etudiant)** : Champs de etudiant modifiables (sauf numero_carte_etudiant).
-    - **Partie 2 (Compte utilisateur)** : Champs de utilisateur modifiables (login_utilisateur, email_principal - tous deux avec validation d'unicité), id_groupe_utilisateur, id_niveau_acces_donne, statut_compte, photo_profil. Actions spécifiques : "Réinitialiser le Mot de Passe", "Forcer la Validation de l'Email", "Gérer 2FA".
-      - Si email_principal est modifié, utilisateur.email_valide passe à 0, nouveau token_validation_email généré, et email de revalidation envoyé.
-  - **Workflow de Soumission (PHP)** : Validation, comparaison valeurs, hachage MDP si changé, UPDATE etudiant, UPDATE utilisateur, journalisation détaillée, notification à l'étudiant si changements critiques.
-- **B.1.6. Suppression / Désactivation / Archivage d'un Étudiant** : <sup>1</sup>
-  - **Objectif** : Gérer la fin du cycle de vie d'un compte, en privilégiant désactivation/archivage.
-  - **B.1.6.1. Désactivation** : UPDATE utilisateur SET statut_compte = 'inactif';. L'étudiant ne peut plus se connecter, données conservées. Journalisation.
-  - **B.1.6.2. Archivage** : UPDATE utilisateur SET statut_compte = 'archive';. Peut impliquer anonymisation partielle ou déplacement de documents vers stockage archive. Journalisation.
-  - **B.1.6.3. Suppression Physique (EXCEPTIONNELLE)** : Uniquement si compte créé par erreur SANS aucune donnée académique liée, ou pour droit à l'effacement RGPD après analyse.
-    - Workflow : Avertissement ultime, vérification intensive des dépendances (inscrire, rapport_etudiant, evaluer, reclamation). Si dépendances, suppression bloquée. Sinon, DELETE transactionnel des données liées (historique_mot_de_passe, pister, recevoir), puis etudiant, puis utilisateur. Journalisation spécifique de la suppression.
-      - La préservation de l'intégrité référentielle est ici absolument critique. Supprimer un étudiant ayant des inscriptions ou des rapports soumis corromprait l'historique académique et statistique de l'établissement.
-- **B.1.7. Gestion des Inscriptions Administratives et Pédagogiques d'un Étudiant (table inscrire)** : <sup>1</sup>
-  - **Accès** : Via bouton "Gérer Inscriptions" pour un étudiant.
-  - **Objectif** : Historique des inscriptions, ajout, modification (statut paiement, décision passage), suppression exceptionnelle.
-  - **B.1.7.1. Listage des Inscriptions** : Tableau des inscrire pour l'étudiant, avec libellés (annee_academique, niveau_etude, statut_paiement_ref, decision_passage_ref).
-  - **B.1.7.2. Ajout Nouvelle Inscription** : Formulaire pour id_annee_academique, id_niveau_etude, montant_inscription, date_inscription, id_statut_paiement, etc.
-    - Logique : Validation unicité PK composite (numero_carte_etudiant, id_annee_academique, id_niveau_etude). INSERT INTO inscrire. Journalisation.
-  - **B.1.7.3. Modification Inscription Existante** : Formulaire pré-rempli. Modification typique de id_statut_paiement, date_paiement, numero_recu_paiement, id_decision_passage. UPDATE inscrire. Journalisation.
-  - **B.1.7.4. Suppression Inscription** : Uniquement si erreur manifeste et aucune donnée académique liée (notes, rapport). Vérification dépendances (evaluer, rapport_etudiant). DELETE FROM inscrire. Journalisation.
-
-##### **B.2. Personnel Administratif (personnel_administratif, utilisateur, et tables de droits associées)** <sup>1</sup>
-
-Cette section est dédiée à la gestion exhaustive des comptes et profils des membres du personnel administratif (Agents de Conformité, Responsables Scolarité, etc.).
-
-- **Objectifs** : Assurer que chaque agent dispose d'un compte sécurisé avec des droits alignés sur ses fonctions. Gérer arrivées, départs, changements de rôle. <sup>1</sup>
-- **B.2.1. Listage des Membres du Personnel Administratif** : <sup>1</sup>
-  - **Interface** : Tableau paginé et triable des personnel_administratif joint à utilisateur.
-  - **Colonnes Essentielles** : numero_personnel_administratif (PK personnel_administratif), nom, prénom, numero_utilisateur, login_utilisateur, email_principal, email_professionnel, libelle_groupe_utilisateur (critique pour le rôle), statut_compte, date_affectation_service, derniere_connexion.
-  - **Actions Contextuelles** : "Voir Profil Complet", "Modifier Profil Personnel", "Modifier Compte Utilisateur", "Gérer Permissions/Groupes", "Voir Activités" (logs enregistrer filtrés).
-- **B.2.2. Moteur de Filtrage et de Recherche Avancée** : <sup>1</sup>
-  - **Champs de Recherche** : numero_personnel_administratif, nom/prénom, numero_utilisateur, login_utilisateur, emails.
-  - **Filtres** : statut_compte, id_groupe_utilisateur (essentiel pour isoler par rôle), id_niveau_acces_donne, date_affectation_service.
-- **B.2.3. Création d'un Nouveau Membre du Personnel Administratif** : <sup>1</sup>
-  - **Interface** : Formulaire "Informations Professionnelles/Personnelles (Profil)" et "Informations du Compte Utilisateur".
-  - **Étape 1 (Profil personnel_administratif)** : numero_personnel_administratif (PK, unique), nom, prenom, telephone_professionnel, email_professionnel, date_affectation_service, responsabilites_cles, champs personnels optionnels.
-  - **Étape 2 (Compte utilisateur)** : login_utilisateur (unique), email_principal (unique), Mot de Passe Initial, id_groupe_utilisateur (choix critique déterminant les permissions), id_niveau_acces_donne, statut_compte ('actif' ou 'en_attente_validation'), photo_profil.
-  - **Logique PHP** : Validation unicité, génération numero_utilisateur (ex: "PERS_ADM_" + UUID), hachage MDP, id_type_utilisateur = 'TYPE_PERS_ADMIN', INSERT transactionnel utilisateur puis personnel_administratif, journalisation, notification email.
-- **B.2.4. Vue Détaillée du Profil d'un Membre du Personnel Administratif** : <sup>1</sup>
-  - **Structure** : En-tête (nom, matricule, photo, statut), Informations Pro/Perso (de personnel_administratif), Informations Compte (de utilisateur), **Permissions Effectives** (liste des libelle_traitement via rattacher pour le groupe de l'agent), Historique des Actions Significatives (extrait de enregistrer filtré par numero_utilisateur de l'agent).
-    - L'affichage des permissions effectives est un élément clé pour que l'administrateur puisse rapidement vérifier et comprendre les droits d'un agent. Cela nécessite une requête joignant traitement et rattacher sur le id_groupe_utilisateur de l'agent.
-- **B.2.5. Modification du Profil Personnel et du Compte Utilisateur** : <sup>1</sup>
-  - **Champs Modifiables (Profil personnel_administratif)** : Tous sauf PKs.
-  - **Champs Modifiables (Compte utilisateur)** : login_utilisateur, email_principal (avec revalidation), **id_groupe_utilisateur (modification très sensible impactant les permissions)**, id_niveau_acces_donne, statut_compte. Actions : Réinit MDP, Gérer 2FA.
-  - **Journalisation** : Très détaillée, notamment pour les changements de id_groupe_utilisateur.
-- **B.2.6. Désactivation / Archivage d'un Membre du Personnel Administratif** : <sup>1</sup>
-  - **Philosophie** : Privilégier désactivation/archivage pour préserver l'historique des actions de l'agent.
-  - **Workflow** : Confirmation, **analyse d'impact et réassignation des tâches en cours (processus métier crucial avant action système)**, UPDATE utilisateur.statut_compte ('inactif' ou 'archive'), journalisation.
-  - **Suppression Physique** : Extrêmement déconseillée si l'agent a effectué des actions enregistrées (approuver, inscrire, etc.).
-- **Tables SQL Primordialement Impliquées pour B.2** : personnel_administratif, utilisateur, type_utilisateur, groupe_utilisateur, niveau_acces_donne, traitement, rattacher, enregistrer, message, recevoir. <sup>1</sup>
-
-##### **B.3. Enseignants (enseignant, utilisateur, et tables d'associations académiques)** <sup>1</sup>
-
-Cette section gère les profils des enseignants. La plupart servent de données de référence, sauf s'ils sont membres de commissions (auquel cas leur compte utilisateur est actif et lié à 'GRP_COMMISSION').
-
-- **Objectifs** : Maintenir une base de données précise des enseignants et de leurs qualifications (grades, fonctions, spécialités) pour les processus administratifs et pédagogiques (notamment pour la Commission). Gérer les comptes des enseignants membres de commissions. <sup>1</sup>
-- **B.3.1. Listage des Enseignants** : <sup>1</sup>
-  - **Interface** : Tableau paginé et triable des enseignant joint à utilisateur.
-  - **Colonnes Essentielles** : numero_enseignant (PK enseignant), nom, prénom, numero_utilisateur, login_utilisateur, email_principal, email_professionnel, "Principale Spécialité" (via specialite et attribuer), "Grade Actuel" (via grade et acquerir), "Fonction Actuelle" (via fonction et occuper), libelle_groupe_utilisateur (pour identifier 'GRP_COMMISSION'), statut_compte.
-  - **Actions Contextuelles** : "Voir Profil Complet", "Modifier Profil Enseignant", "Modifier Compte Utilisateur" (pertinent pour membres commission), "Gérer Associations Académiques", "Voir Activités Liées" (consultatif : direction mémoire, votes commission, notes).
-- **B.3.2. Filtrage et Recherche Avancée d'Enseignants** : <sup>1</sup>
-  - **Champs de Recherche** : numero_enseignant, nom/prénom, numero_utilisateur, login_utilisateur, emails.
-  - **Filtres** : statut_compte, id_groupe_utilisateur (pour isoler 'GRP_COMMISSION' ou 'GRP_ENSEIGNANT_REF'), id_specialite, id_grade, id_fonction.
-- **B.3.3. Création d'un Nouvel Enseignant** : <sup>1</sup>
-  - **Interface** : Formulaire "Informations Profil (enseignant)" et "Informations Compte Utilisateur (utilisateur)".
-  - **Étape 1 (Profil enseignant)** : numero_enseignant (PK, unique), nom, prenom, telephone_professionnel, email_professionnel, champs personnels optionnels.
-  - **Étape 2 (Compte utilisateur)** : login_utilisateur (unique ; "NO_LOGIN_" + numero_enseignant si pas d'accès direct), email_principal (unique), Mot de Passe Initial (aléatoire non communiqué si pas d'accès), id_type_utilisateur = 'TYPE_ENS', id_groupe_utilisateur ('GRP_COMMISSION' ou 'GRP_ENSEIGNANT_REF'), id_niveau_acces_donne, statut_compte ('actif' pour commission, 'inactif' ou statut "Référentiel" sinon), photo_profil.
-  - **Logique PHP** : Validation, génération numero_utilisateur (ex: "ENS_" + UUID), hachage MDP, INSERT transactionnel utilisateur puis enseignant, journalisation, notification si compte actif.
-  - **Étape 4 (Post-Création)** : Assignation initiale de grade, fonction, spécialité via B.3.6.
-- **B.3.4. Vue Détaillée du Profil d'un Enseignant** : <sup>1</sup>
-  - **Affichage** : Infos Perso/Pro (enseignant), Infos Compte (utilisateur), Associations Académiques Actuelles/Historiques (Grades via acquerir, Fonctions via occuper, Spécialités via attribuer), Activités Liées aux Soutenances (direction mémoire via affecter, votes via vote_commission), Permissions Effectives (si membre commission).
-- **B.3.5. Modification du Profil Enseignant et du Compte Utilisateur** : <sup>1</sup>
-  - **Champs Modifiables (Profil enseignant)** : Contacts, infos pro/perso.
-  - **Champs Modifiables (Compte utilisateur)** : login_utilisateur, email_principal, statut_compte, id_groupe_utilisateur (crucial si un enseignant devient/cesse d'être membre de commission). Réinit MDP.
-  - **Workflow** : Validation, UPDATE, journalisation.
-- **B.3.6. Gestion des Associations Académiques d'un Enseignant** : <sup>1</sup>
-  - **Objectif** : Maintenir à jour qualifications et affiliations pour la Commission.
-  - **Interface** : Sélection numero_enseignant. Sections pour :
-    - **Grades (acquerir)** : CRUD sur les paires (id_grade, date_acquisition) pour l'enseignant.
-    - **Fonctions (occuper)** : CRUD sur les triplets (id_fonction, date_debut_occupation, date_fin_occupation).
-    - **Spécialités (attribuer)** : Interface type "dual listbox" pour sélectionner/désélectionner des id_specialite. Logique de synchronisation INSERT/DELETE dans attribuer.
-  - **Logique** : Opérations transactionnelles et journalisées.
-- **B.3.7. Désactivation / Archivage d'un Compte Enseignant** : <sup>1</sup>
-  - **Contexte** : Départ, retraite.
-  - **Procédure** : Vérifier rôles actifs critiques (directeur mémoire sur rapports en cours de validation finale, votes en attente). UPDATE utilisateur.statut_compte ('inactif' ou 'archive'). Clôturer fonctions actives (occuper.date_fin_occupation). Enregistrements affecter, vote_commission conservés pour historique. Journalisation. Suppression physique déconseillée.
-- **Tables SQL Primordialement Impliquées pour B.3** : enseignant, utilisateur, type_utilisateur, groupe_utilisateur, acquerir, grade, occuper, fonction, attribuer, specialite, affecter, statut_jury, vote_commission, validation_pv, evaluer, enregistrer. <sup>1</sup>
-- **Considérations Spécifiques** : Différenciation claire enseignant référentiel vs. membre de commission via id_groupe_utilisateur et statut_compte. Les données de qualification sont principalement pour la Commission. <sup>1</sup>
-
-#### **C. Gestion des Habilitations (RBAC)** <sup>1</sup>
-
-Cette section est le cœur de la configuration de la sécurité et du contrôle d'accès. Elle permet à l'Administrateur Système de définir de manière granulaire qui peut faire quoi.
-
-- **Objectif Stratégique** : Mettre en place et maintenir un modèle RBAC robuste, aligné sur les besoins et politiques de sécurité, assurant séparation des tâches et moindre privilège. <sup>1</sup>
-- **Objectif Opérationnel** : Fournir les interfaces pour définir types utilisateurs, groupes, niveaux d'accès données, cataloguer fonctionnalités (traitements), et lier fonctionnalités aux groupes. <sup>1</sup>
-
-##### **C.1. Types Utilisateur (Rôles) (type_utilisateur)** <sup>1</sup>
-
-Gère les catégories fondamentales d'utilisateurs (Étudiant, Personnel Admin, etc.). id_type_utilisateur (PK, VARCHAR(50)) est manuel et significatif (ex: 'TYPE_ETUD').
-
-- **C.1.1. Listage des Types Utilisateur** : Tableau id_type_utilisateur, libelle_type_utilisateur, "Nombre d'Utilisateurs Associés". Actions "Modifier", "Supprimer" (conditionnelle). <sup>1</sup>
-- **C.1.2. Création Nouveau Type Utilisateur** : Formulaire pour id_type_utilisateur (unique), libelle_type_utilisateur. INSERT INTO type_utilisateur. Journalisation. <sup>1</sup>
-- **C.1.3. Modification Type Utilisateur** : id_type_utilisateur en lecture seule. Modification libelle_type_utilisateur. UPDATE type_utilisateur. Journalisation. <sup>1</sup>
-- **C.1.4. Suppression Type Utilisateur** : Confirmation forte. Vérification dépendances (SELECT COUNT(\*) FROM utilisateur WHERE id_type_utilisateur =?). Si utilisé, suppression bloquée. Sinon, DELETE FROM type_utilisateur. Journalisation. <sup>1</sup>
-
-##### **C.2. Groupes Utilisateur (groupe_utilisateur)** <sup>1</sup>
-
-Définit des regroupements logiques pour permissions communes. id_groupe_utilisateur (PK, VARCHAR(50)) est manuel et significatif (ex: 'GRP_AGENT_CONF_SCOL').
-
-- **C.2.1. Listage des Groupes Utilisateur** : Tableau id_groupe_utilisateur, libelle_groupe_utilisateur, "Nombre d'Utilisateurs Membres", "Nombre de Permissions Assignées". Actions "Modifier", "Supprimer" (conditionnelle), "Gérer Permissions du Groupe". <sup>1</sup>
-- **C.2.2. Création Nouveau Groupe Utilisateur** : Formulaire id_groupe_utilisateur (unique), libelle_groupe_utilisateur. INSERT INTO groupe_utilisateur. Journalisation. <sup>1</sup>
-- **C.2.3. Modification Groupe Utilisateur** : id_groupe_utilisateur en lecture seule. Modif libelle_groupe_utilisateur. UPDATE groupe_utilisateur. Journalisation. <sup>1</sup>
-- **C.2.4. Suppression Groupe Utilisateur** : Confirmation. Vérification dépendances (utilisateur.id_groupe_utilisateur, rattacher.id_groupe_utilisateur). Si utilisé, suppression bloquée. Sinon, DELETE FROM groupe_utilisateur. Journalisation. <sup>1</sup>
-- **Considérations** : Le schéma actuel avec un seul id_groupe_utilisateur par utilisateur est simple mais peut être limitant pour des rôles multiples. Une table de jonction utilisateur_groupe_appartenance offrirait plus de flexibilité (hors périmètre actuel). <sup>1</sup>
-
-##### **C.3. Niveaux d'Accès aux Données (niveau_acces_donne)** <sup>1</sup>
-
-Définit la portée ou la visibilité des données. id_niveau_acces_donne (PK, VARCHAR(50)) est manuel (ex: 'LVL_GLOBAL_ALL'). La logique de filtrage est implémentée en PHP.
-
-- **C.3.1. Listage des Niveaux d'Accès** : Tableau id_niveau_acces_donne, libelle_niveau_acces_donne, "Nombre d'Utilisateurs Associés". Actions "Modifier", "Supprimer" (conditionnelle). <sup>1</sup>
-- **C.3.2. Création Nouveau Niveau d'Accès** : Formulaire id_niveau_acces_donne (unique), libelle_niveau_acces_donne. INSERT INTO niveau_acces_donne. Journalisation. <sup>1</sup>
-  - La création ici ne fait que définir une étiquette. Le filtrage effectif des données basé sur ces niveaux doit être codé dans l'application PHP. Une coordination étroite avec les développeurs est nécessaire. <sup>1</sup>
-- **C.3.3. Modification Niveau d'Accès** : id_niveau_acces_donne en lecture seule. Modif libelle_niveau_acces_donne. UPDATE niveau_acces_donne. Journalisation. <sup>1</sup>
-- **C.3.4. Suppression Niveau d'Accès** : Confirmation. Vérification dépendances (utilisateur.id_niveau_acces_donne). Si utilisé, suppression bloquée. Sinon, DELETE FROM niveau_acces_donne. Journalisation. <sup>1</sup>
-  - La suppression d'un niveau d'accès utilisé sans mise à jour du code PHP qui s'y réfère peut entraîner des erreurs ou un comportement inattendu (accès total ou nul).
-
-##### **C.4. Permissions (Fonctionnalités) (gestion des tables traitement et rattacher)** <sup>1</sup>
-
-Cœur de l'attribution des droits d'action. id_traitement (PK, VARCHAR(50)) est manuel et significatif (ex: 'TRAIT_ETUD_CREATE_NEW'), utilisé dans le code PHP.
-
-- **C.4.1. Sous-Section : Gestion des Fonctionnalités / Traitements (traitement)** <sup>1</sup>
-  - **Objectif** : Maintenir un dictionnaire des opérations système contrôlables.
-  - **C.4.1.1. Listage des Traitements** : Tableau id_traitement, libelle_traitement, "Nombre de Groupes Ayant cette Permission". Actions "Modifier", "Supprimer" (très conditionnel). <sup>1</sup>
-  - **C.4.1.2. Création Nouveau Traitement** : Formulaire id_traitement (unique, convention de nommage claire), libelle_traitement. INSERT INTO traitement. Journalisation. <sup>1</sup>
-  - **C.4.1.3. Modification Traitement** : id_traitement en lecture seule (ne JAMAIS modifier si utilisé dans le code). Modif libelle_traitement. UPDATE traitement. Journalisation. <sup>1</sup>
-  - **C.4.1.4. Suppression Traitement** : Confirmation forte. Vérification dépendances (rattacher, pister). Si utilisé, suppression bloquée. Préférer dépréciation (champ est_actif dans traitement) à suppression physique. <sup>1</sup>
-- **C.4.2. Sous-Section : Assignation des Permissions aux Groupes Utilisateur (gestion de rattacher)** <sup>1</sup>
-  - **Objectif** : Créer les liens entre groupe_utilisateur et traitement.
-  - **Interface d'Assignation (Mode "par Groupe")** :
-        1. Sélection du id_groupe_utilisateur.
-        2. Affichage de deux listes (type "Dual Listbox") : "Permissions Assignées" et "Permissions Disponibles".
-        3. Mécanisme de transfert (boutons "Ajouter >>", "<< Retirer").
-        4. Bouton "Enregistrer les Modifications".
-  - **Logique PHP de Sauvegarde** : Algorithme de synchronisation pour rattacher (comparaison liste soumise vs. base, puis INSERT/DELETE ciblés). Journalisation globale et détaillée des permissions ajoutées/retirées. <sup>1</sup>
-- **Workflow Typique de Configuration des Droits pour un Nouveau Rôle** : <sup>1</sup>
-    1. (C.1) Création type_utilisateur si besoin.
-    2. (C.2) Création groupe_utilisateur (ex: "GRP_SUPPORT_ETUD").
-    3. (C.4.1) Vérif/Création traitement nécessaires (ex: "TRAIT_ETUD_VIEW_PROFILE").
-    4. (C.4.2) Assignation des traitements au groupe "GRP_SUPPORT_ETUD".
-    5. (B.x) Assignation des utilisateurs au id_groupe_utilisateur "GRP_SUPPORT_ETUD".
-- **Considérations Générales pour Habilitations** : Principe du moindre privilège, granularité des traitements, conventions de nommage, revue périodique des droits, pas de droits directs aux utilisateurs (permissions via groupes). <sup>1</sup>
-
-#### **D. Configuration Système** <sup>1</sup>
-
-Regroupe les fonctionnalités de paramétrage du comportement global et des données de base.
-
-- **Objectif Stratégique** : Assurer que la plateforme fonctionne avec des données de référence correctes, que les processus sont configurés aux besoins, et que les communications sont professionnelles. <sup>1</sup>
-- **Objectif Opérationnel** : CRUD des référentiels, ajustement paramètres workflow, gestion modèles documents/notifications. <sup>1</sup>
-
-##### **D.1. Gestion des Référentiels (Paramètres Généraux)** <sup>1</sup>
-
-Interface centralisée pour le CRUD de toutes les listes de valeurs standardisées (tables \_ref). La suppression d'une entrée est conditionnée à sa non-utilisation par une clé étrangère.
-
-- **D.1.1. Années Académiques (annee_academique)** : CRITIQUE. id_annee_academique (PK), libelle_annee_academique, date_debut, date_fin, est_active (un seul à 1). Interface spécifique pour gérer est_active (désactivation de l'ancienne lors de l'activation d'une nouvelle). <sup>1</sup>
-- **D.1.2. Niveaux d'Étude (niveau_etude)** : id_niveau_etude (PK), libelle_niveau_etude. <sup>1</sup>
-- **D.1.3. Spécialités (specialite)** : id_specialite (PK), libelle_specialite, numero_enseignant_specialite (FK optionnel). <sup>1</sup>
-- **D.1.4. Fonctions (fonction)** : id_fonction (PK), libelle_fonction. <sup>1</sup>
-- **D.1.5. Grades (grade)** : id_grade (PK), libelle_grade, abreviation_grade. <sup>1</sup>
-- **D.1.6. Unités d'Enseignement (UE) (ue)** : id_ue (PK), libelle_ue, credits_ue. <sup>1</sup>
-- **D.1.7. Éléments Constitutifs d'UE (ECUE) (ecue)** : id_ecue (PK), libelle_ecue, id_ue (FK), credits_ecue. <sup>1</sup>
-- **D.1.8. Entreprises (entreprise)** : id_entreprise (PK), libelle_entreprise, secteur_activite, etc. <sup>1</sup>
-- **D.1.9. Niveaux d'Approbation (niveau_approbation)** : id_niveau_approbation (PK), libelle_niveau_approbation, ordre_workflow. <sup>1</sup>
-- **D.1.10. Statuts/Rôles Jury (statut_jury)** : id_statut_jury (PK), libelle_statut_jury. <sup>1</sup>
-- **D.1.11. Types d'Action Système (action)** : id_action (PK), libelle_action, categorie_action. <sup>1</sup>
-- **D.1.12. Modèles de Message (message)** : id_message (PK), sujet_message, type_message. Contenu géré en D.3.2. <sup>1</sup>
-- **D.1.13. Types de Notification (notification)** : id_notification (PK), libelle_notification. <sup>1</sup>
-- **D.1.14. à D.1.22. Autres Référentiels de Statuts et Décisions** : statut_conformite_ref, statut_paiement_ref, statut_pv_ref, statut_rapport_ref, statut_reclamation_ref, decision_passage_ref, decision_validation_pv_ref, decision_vote_ref, type_document_ref. Chacun avec id_...\_ref (PK) et libelle_...\_ref. <sup>1</sup>
-
-##### **D.2. Paramètres Applicatifs & Workflow** <sup>1</sup>
-
-Configuration des règles métier globales, seuils, comportements. Stockage via fichier de conf (ex: .env) ou table systeme_parametres (non dans DDL).
-
-- **D.2.1. Configuration des Délais et Dates Limites** : Date limite soumission rapports (par année/niveau), délai resoumission après corrections (conformité/commission), durée validité tokens (reset MDP, validation email). <sup>1</sup>
-- **D.2.2. Règles de Validation de Conformité des Rapports** : Documents requis (via type_document_ref.requis_ou_non), formats fichiers autorisés, taille max fichiers, nombre pages min/max. <sup>1</sup>
-- **D.2.3. Paramètres des Alertes Système et Notifications Automatiques** : Délai alerte rapport en attente (conformité/commission), délai alerte vote commission en attente, activation/désactivation notifications auto. Tâches CRON pour déclenchement. <sup>1</sup>
-- **D.2.4. Paramètres du Processus de Vote en Ligne (Commission)** : Nombre max tours de vote, délai par tour, visibilité des votes, quorum/majorité requise. <sup>1</sup>
-- **D.2.5. Options du Chat Intégré** : Politique rétention messages, création auto groupes discussion commission, autoriser partage fichiers, notifications chat. <sup>1</sup>
-- **Sauvegarde des Paramètres** : Bouton "Enregistrer". Logique PHP met à jour fichier config ou BDD. Journalisation. <sup>1</sup>
-
-##### **D.3. Modèles de Documents & Notifications** <sup>1</sup>
-
-Personnalisation des gabarits pour documents PDF et communications.
-
-- **D.3.1. Gestion des Modèles de Documents PDF** : Attestations, PV, reçus, bulletins. <sup>1</sup>
-  - **Interface** : Listage types documents gérables. Pour chaque type : affichage modèle actif, action "Modifier/Téléverser Modèle" (upload fichier template HTML/DOCX ou éditeur riche WYSIWYG), prévisualisation, réinitialisation au défaut.
-  - **Stockage Modèles** : Fichiers sur serveur, table modeles_pdf_config (conceptuelle) pour lier ID modèle au chemin.
-  - **Logique ServiceDocumentGenerator** : Récupère template, données, fusionne, convertit en PDF (TCPDF).
-- **D.3.2. Gestion des Modèles de Notifications (Courriel et Internes Plateforme) (message)** : <sup>1</sup>
-  - **Interface** : CRUD sur message. Listage modèles (id_message, sujet_message, type_message).
-  - **Création/Modification** : Formulaire pour id_message (unique), sujet_message (email), libelle_message (corps du message, éditeur riche, placeholders {VARIABLE}), type_message ('EMAIL', 'NOTIFICATION_PLATEFORME'). Prévisualisation.
-  - **Logique d'Envoi (ServiceNotification, ServiceEmail)** : Identifie id_message, récupère template, remplace placeholders, envoie (email via ServiceEmail, notif interne via INSERT recevoir).
-- **Considérations** : Placeholders robustes, internationalisation (i18n) si besoin (hors DDL actuel), test emails. <sup>1</sup>
-
-#### **E. Gestion Académique & Administrative (Configuration & Supervision)** <sup>1</sup>
-
-Supervision et configuration des processus académiques. L'Admin a un rôle de configuration, supervision et intervention exceptionnelle.
-
-- **Objectif Stratégique** : Assurer structure correcte des processus académiques, cohérence et fiabilité des données. <sup>1</sup>
-- **Objectif Opérationnel** : Consultation globale données académiques, configuration paramètres, modifications/corrections privilégiées, gestion liens structurels enseignants. <sup>1</sup>
-
-##### **E.1. Inscriptions Administratives et Pédagogiques (inscrire)** <sup>1</sup>
-
-Vue d'ensemble inscriptions, configuration règles, intervention.
-
-- **E.1.1. Consultation Globale et Recherche d'Inscriptions** : Tableau paginé et triable de inscrire (jointures etudiant, annee_academique, niveau_etude, statut_paiement_ref, decision_passage_ref). Filtres et recherche. Action "Modifier Inscription". <sup>1</sup>
-- **E.1.2. Configuration des Paramètres d'Inscription** : Règles cohérence cursus, gestion frais (potentielle table tarifs_scolarite), délais de paiement. <sup>1</sup>
-- **E.1.3. Intervention de Niveau Administrateur sur Inscriptions** : Formulaire modif pré-rempli. Modification de tous les champs de inscrire (avec prudence pour PKs), justification requise pour audit. Journalisation détaillée. Suppression exceptionnelle (voir B.1.7.4). <sup>1</sup>
-
-##### **E.2. Évaluations / Notes des Étudiants (evaluer)** <sup>1</sup>
-
-Supervision notes, configuration processus évaluation, intervention exceptionnelle.
-
-- **E.2.1. Consultation Globale et Recherche des Notes** : Tableau paginé et triable de evaluer (jointures etudiant, ecue, ue, enseignant, et potentiellement annee_academique via inscription). Filtres et recherche. Action "Modifier Note". <sup>1</sup>
-- **E.2.2. Configuration Paramètres Processus Évaluation** : Périodes de saisie des notes (potentielle table periodes_saisie_notes), droits de saisie/modif (via traitement), règles calcul moyenne (informatif), affichage notes aux étudiants (date publication). <sup>1</sup>
-- **E.2.3. Intervention Niveau Administrateur sur Notes** : Formulaire modif pré-rempli. Modification note, date_evaluation (PKs non modifiables). Motif admin obligatoire. Journalisation détaillée. Suppression exceptionnelle (très risquée). <sup>1</sup>
-- **Considérations** : Intégrité notes validées, traçabilité modifications. <sup>1</sup>
-
-##### **E.3. Stages (faire_stage, entreprise)** <sup>1</sup>
-
-Vue d'ensemble stages, gestion référentiel entreprises, configuration, intervention.
-
-- **E.3.1. Consultation Globale et Recherche Stages Enregistrés** : Tableau faire_stage (jointures etudiant, entreprise). Filtres et recherche. Action "Modifier Données du Stage". <sup>1</sup>
-- **E.3.2. Gestion Référentiel Entreprises (entreprise)** : Redirection vers D.1.8 pour CRUD entreprise. <sup>1</sup>
-- **E.3.3. Configuration Paramètres Relatifs aux Stages** : Prérequis stage pour accès plateforme, documents justificatifs (informatif pour RS), périodes min/max stage, règles validation sujet (processus externe). <sup>1</sup>
-- **E.3.4. Intervention Niveau Administrateur sur Données de Stage** : Formulaire modif pré-rempli. Modification champs faire_stage (avec prudence pour PKs). Motif admin. Journalisation détaillée. Suppression exceptionnelle (si pas de rapport lié / compte activé). <sup>1</sup>
-- **Considérations** : Rôle RS pour saisie courante. Impact sur accès étudiant. Lien logique avec rapport soutenance. <sup>1</sup>
-
-##### **E.4. Associations Enseignants (acquerir, occuper, attribuer)** <sup>1</sup>
-
-Gestion qualifications et fonctions des enseignants (référence pour Commission).
-
-- **Interface** : Sélection enseignant, puis sections pour Grades, Fonctions, Spécialités.
-- **E.4.1. Gestion Associations Enseignant-Grade (acquerir)** : CRUD sur paires (id_grade, date_acquisition) pour l'enseignant. <sup>1</sup>
-- **E.4.2. Gestion Associations Enseignant-Fonction (occuper)** : CRUD sur triplets (id_fonction, date_debut_occupation, date_fin_occupation). <sup>1</sup>
-- **E.4.3. Gestion Associations Enseignant-Spécialité (attribuer)** : Interface "dual listbox" pour sélectionner/désélectionner id_specialite. Logique de synchronisation INSERT/DELETE dans attribuer. <sup>1</sup>
-- **Tables SQL** : enseignant, grade, acquerir, fonction, occuper, specialite, attribuer, enregistrer. <sup>1</sup>
-
-#### **F. Supervision & Maintenance** <sup>1</sup>
-
-Centre de contrôle opérationnel et technique.
-
-- **Objectif Stratégique** : Garantir performance, stabilité, sécurité, conformité. <sup>1</sup>
-- **Objectif Opérationnel** : Outils pour surveiller workflows, gérer documents finaux, contrôler volume logs/notifs, auditer, import/export, maintenance technique. <sup>1</sup>
-
-##### **F.1. Suivi des Workflows et des Processus** <sup>1</sup>
-
-Vue d'ensemble dynamique avancement validation rapports.
-
-- **F.1.1. Tableau de Bord Supervision Rapports** : Widgets visuels (filtre par id_annee_academique).
-  - Widget 1 : Répartition rapports par statut actuel (diagramme). <sup>1</sup>
-  - Widget 2 : Délais moyens traitement par étape (calculs complexes, idéalement via table historique_statut_rapport). <sup>1</sup>
-  - Widget 3 : Rapports en retard/bloqués (basé sur délais configurés en D.2.3). <sup>1</sup>
-  - Widget 4 : Charge de travail (approximation pour Agents Conformité, Commission, Rédacteurs PV). <sup>1</sup>
-
-##### **F.2. Gestion des Procès-Verbaux (Admin) (compte_rendu)** <sup>1</sup>
-
-Accès centralisé PV, gestion archivage officiel, éligibilité diffusion.
-
-- **F.2.1. Listage et Consultation Tous les PV** : Tableau compte_rendu. Filtres. Actions : Voir/Télécharger PDF, Modifier Statut PV (ex: 'PV_ARCHIVE_OFFICIEL'), Marquer pour Publication Externe. <sup>1</sup>
-- **F.2.2. Archivage Officiel des PV** : Sélection PV 'PV_VALID', action "Archiver Officiellement" -> UPDATE id_statut_pv. <sup>1</sup>
-- **F.2.3. Gestion Éligibilité Publication Externe** : UPDATE rapport_etudiant.publication_autorisee (nouvelle colonne) ou compte_rendu.publication_externe_ok (nouvelle colonne). <sup>1</sup>
-
-##### **F.3. Gestion des Notifications Système (recevoir, notification, message)** <sup>1</sup>
-
-Gestion volumétrie notifications, supervision envoi.
-
-- **F.3.1. Supervision Notifications et Communications** : Indicateurs (nb total recevoir, répartition par type/statut, temps moyen lecture, état file emails). <sup>1</sup>
-- **F.3.2. Archivage et Purge Notifications Utilisateurs (recevoir)** : Formulaire options purge (notifications lues > N mois, toutes notifs > M mois pour comptes inactifs/archivés). DELETE FROM recevoir. Journalisation. <sup>1</sup>
-- **F.3.3. Gestion Modèles Message et Notification (Redirection)** : Raccourcis vers D.3.2, D.1.13. Affichage stats utilisation modèles. <sup>1</sup>
-
-##### **F.4. Journaux d'Audit (enregistrer, pister)** <sup>1</sup>
-
-Accès complet et recherche avancée logs. Non modifiables via interface.
-
-- **F.4.1. Consultation Détaillée Journal Actions Utilisateurs (enregistrer)** : Tableau détaillé enregistrer (jointures utilisateur, action). Filtres (date, auteur, type action, entité, IP). Export CSV. Champ details_action (JSON) crucial. <sup>1</sup>
-- **F.4.2. Consultation Détaillée Traçabilité Accès Fonctionnalités (pister)** : Tableau pister (jointures utilisateur, traitement). Filtres (date, utilisateur, fonctionnalité, accès accordé/refusé). <sup>1</sup>
-- **Considérations** : Intégrité/Immutabilité logs. Volume (rotation, archivage, purge). Performance recherches (indexation). <sup>1</sup>
-
-##### **F.5. Outils d'Import/Export Données** <sup>1</sup>
-
-Réservé Admin Système droits élevés.
-
-- **F.5.1. Fonctionnalité d'Import de Données** : Création/MAJ masse (profils utilisateurs, référentiels). <sup>1</sup>
-  - Interface : Étapes (Sélection type données, Upload CSV + Options doublons/simulation, Mapping colonnes, Validation/Prévisualisation, Exécution, Rapport).
-  - Logique PHP : Parse fichier, génère IDs VARCHAR, INSERT/UPDATE transactionnels, journalisation.
-  - Sécurité : Validation rigoureuse, sauvegardes BDD avant, mode simulation.
-- **F.5.2. Fonctionnalité d'Export de Données** : Extraction pour sauvegarde, analyse, migration. <sup>1</sup>
-  - Interface : Étapes (Sélection type données/tables, Filtres optionnels, Sélection colonnes optionnelle, Choix format CSV/XML/SQL, Génération/Téléchargement).
-  - Logique PHP : Construit requête, récupère données, formate, initie téléchargement.
-
-##### **F.6. Maintenance Technique** <sup>1</sup>
-
-Opérations bas niveau, diagnostic, sauvegarde/restauration. Prudence extrême.
-
-- **F.6.1. Outils Maintenance Base de Données** : Boutons pour OPTIMIZE TABLE, ANALYZE TABLE, CHECK TABLE, REPAIR TABLE. Nettoyage données temporaires (sessions, tokens expirés). <sup>1</sup>
-- **F.6.2. Gestion Sauvegardes et Procédures Restauration** : <sup>1</sup>
-  - Déclencher sauvegarde manuelle (mysqldump via script serveur). Lister sauvegardes.
-  - Procédure restauration : Très délicate. Interface limitée (documentation procédure CLI). Application en mode maintenance.
-- **F.6.3. Application Mises à Jour Applicatives** : Pour MAJ mineures/patchs. Affichage version actuelle, vérif MAJ, appli MAJ (si géré par app). Outils externes (Composer, scripts déploiement) pour MAJ majeures. <sup>1</sup>
-- **F.6.4. Informations de Diagnostic Système et Serveur** : Lecture seule : Version PHP/extensions, SGBD, config PHP pertinente, permissions répertoires, test connexion BDD. Lien phpinfo() (protégé). <sup>1</sup>
-- **Considérations** : Droits stricts. Mode maintenance applicatif. Documentation procédures. Accès logs serveur. <sup>1</sup>
-
-#### **G. Reporting & Analytique** <sup>1</sup>
-
-Transformation données opérationnelles en informations structurées pour aide à la décision.
-
-- **Objectif Stratégique** : Support décision pour amélioration continue processus. <sup>1</sup>
-- **Objectif Opérationnel** : Outils pour générer rapports stats avancés, configurer/visualiser dashboards analytiques. <sup>1</sup>
-
-##### **G.1. Génération de Rapports Statistiques Avancés** <sup>1</sup>
-
-Création à la demande de rapports tabulaires/agrégés, exportables.
-
-- **Interface Génération Rapports** : Étapes (Sélection domaine/sujet, Indicateurs/Mesures, Dimensions groupement, Filtres, Options formatage/export CSV/Excel/PDF). Option sauvegarde config rapport. <sup>1</sup>
-- **G.1.1. Exemples Rapports Prédéfinis/Configurables** : <sup>1</sup>
-  - **Processus Validation Rapports** : Taux conformité, Taux validation commission, Délais moyens traitement (nécessite historique_statut_rapport ou analyse enregistrer), Performance acteurs (anonymisation optionnelle).
-  - **Contenus et Corrections** : Tendances thématiques (rapport_etudiant.theme), Analyse commentaires (NLP si structurés), Nombre moyen versions (document_soumis.version).
-  - **Inscriptions et Notes** : Rapports basés sur données de la section E.
-- **G.1.2. Personnalisation et Planification Rapports (Avancé)** : Query Builder graphique, sauvegarde vues, planification envoi emails (CRON). <sup>1</sup>
-
-##### **G.2. Configuration et Visualisation de Tableaux de Bord Analytiques (Dashboards)** <sup>1</sup>
-
-Interface visuelle et interactive pour KPIs clés.
-
-- **G.2.1. Bibliothèque de Widgets/Graphiques Prédéfinis** : Pour KPIs (Taux Validation, Délai Moyen, etc.). Chaque widget alimenté par requête SQL agrégation. <sup>1</sup>
-- **G.2.2. Interface Création/Personnalisation Tableau de Bord** : Nommer dashboard, grille mise en page, choix widgets, config options widget. Stockage config dans dashboard_configurations (JSON, nouvelle table). <sup>1</sup>
-- **G.2.3. Visualisation Tableaux de Bord** : Sélection dashboard, chargement dynamique widgets, graphiques interactifs (Chart.js, ApexCharts). <sup>1</sup>
-- **G.2.4. Filtrage Global Tableaux de Bord** : Filtres (année, niveau) s'appliquant à tous les widgets. <sup>1</sup>
-- **Considérations** : Performance (indexation, agrégats précalculés/data marts), définition KPIs, capacités export, sécurité accès données. <sup>1</sup>
-
-## **Partie II : Module Personnel Administratif** <sup>1</sup>
-
-Le Module Personnel Administratif de "GestionMySoutenance" est l'interface de travail spécifiquement conçue pour les membres du personnel de l'établissement chargés des opérations administratives et du suivi du processus de soutenance des étudiants.
-
-### **A. Introduction et Objectifs du Module**
-
-L'objectif général de ce module est de fournir des outils adaptés et spécifiques aux différents rôles administratifs pour leur permettre de gérer efficacement leurs tâches quotidiennes. Il vise à assurer le respect des procédures de l'établissement concernant la conformité des informations des rapports, la gestion des dossiers étudiants, les inscriptions, et la génération des comptes utilisateurs. De plus, il facilite la communication et la coordination avec les étudiants et les autres instances, comme la commission de validation, tout en garantissant une traçabilité complète et sécurisée des actions administratives effectuées. <sup>1</sup>
-
-**Rôles Clés et Accès** <sup>1</sup>
-
-Ce module s'adresse principalement à deux types de rôles, chacun ayant des responsabilités et des accès distincts, déterminés par leur utilisateur.id_groupe_utilisateur et les permissions associées via la table rattacher:
-
-1. **Agent de Contrôle de Conformité (Ex: id_groupe_utilisateur = 'GRP_AGENT_CONF')**:
-    - Est responsable de la vérification administrative et réglementaire des informations et du contenu des rapports, qui sont saisis textuellement par les étudiants.
-    - Prend la décision sur la conformité des soumissions avant leur transmission à la commission pédagogique.
-    - Communique les motifs de non-conformité aux étudiants.
-2. **Responsable Scolarité (Ex: id_groupe_utilisateur = 'GRP_GEST_SCOL')**:
-    - Gère les dossiers administratifs des étudiants (informations personnelles, inscriptions, statuts de paiement).
-    - Enregistre et valide les informations de stage des étudiants. Ces informations sont basées sur des justificatifs physiques ou des procédures externes au système, puis sont saisies manuellement dans la plateforme.
-    - Est responsable de la génération des comptes utilisateurs pour les étudiants qui remplissent les prérequis.
-    - Peut être impliqué dans la saisie des notes (si habilité par un traitement spécifique) et la génération de documents PDF officiels pour les étudiants.
-    - Traite certaines réclamations étudiantes, notamment celles liées aux informations de stage ou aux prérequis d'accès à la plateforme.
-
-L'accès au module est sécurisé par le service ServiceAuthentification.php. Chaque agent se connecte avec son login_utilisateur et son mot_de_passe personnels. Les fonctionnalités visibles et accessibles dépendront du groupe auquel il appartient et des traitement (permissions) qui lui sont rattacher. Il est important de noter qu'aucun fichier (rapport, attestation de stage physique, etc.) n'est téléversé par les étudiants ou par le personnel administratif via ce module pour constituer le dossier de rapport. Les informations des rapports sont saisies et stockées sous forme textuelle. Les documents officiels (attestations, bulletins) sont générés par le système au format PDF à partir des données en base. <sup>1</sup>
-
-### **B. Interface Utilisateur Principale**
-
-**1\. Header Proposé** <sup>1</sup>
-
-L'en-tête du Module Personnel Administratif est conçu pour identifier clairement la section et personnaliser l'expérience de l'agent.
-
-- **Intitulé** : "Espace Administratif MySoutenance - \\ - \[Nom Prénom de l'Agent\]".
-- **Affichage** : Permanent en haut de chaque page du module.
-- **Fonctionnalités associées au header** :
-  - **Logo de l'Institution / Application**.
-  - **Nom et Prénom de l'agent connecté** : Récupérés depuis personnel_administratif.nom, prenom via la liaison utilisateur.numero_utilisateur -> personnel_administratif.numero_utilisateur.
-  - **Lien/Icône vers "Mon Profil"** : Permet à l'agent de gérer son propre compte utilisateur (mot de passe, photo_profil s'il souhaite en ajouter une).
-  - **Indicateur de Notifications Non Lues** : Un badge avec un nombre sur une icône de cloche, basé sur recevoir.lue = 0 pour le numero_utilisateur de l'agent.
-  - **Bouton/Lien de Déconnexion Sécurisée** : Appelle ServiceAuthentification.detruireSessionUtilisateur(), action loguée dans la table enregistrer.
-  - **Affichage discret de l'Année Académique Active** : annee_academique.libelle_annee_academique où est_active = 1, récupérée via ServiceConfigurationSysteme.
-
-**2\. Sidebar Dynamique** <sup>1</sup>
-
-La barre latérale de navigation s'adapte en fonction du rôle spécifique de l'agent connecté (utilisateur.id_groupe_utilisateur).
-
-- **2.1. Sidebar pour l'Agent de Contrôle de Conformité (GRP_AGENT_CONF)** <sup>1</sup>
-  - **A. Tableau de Bord (Conformité)** : Libellé "Tableau de Bord", Icône Maison ou Graphique.
-  - **B. Rapports à Vérifier** : Libellé "Rapports à Vérifier", Icône Dossier avec loupe.
-  - **C. Historique des Vérifications** : Libellé "Historique Vérifications", Icône Archive ou Liste.
-  - **D. Messagerie Interne (commun)** : Libellé "Messagerie", Icône Enveloppe ou Bulles de chat.
-  - **E. Mon Profil (commun)** : Libellé "Mon Profil", Icône Utilisateur ou Engrenage.
-- **2.2. Sidebar pour le Responsable Scolarité (GRP_GEST_SCOL)** <sup>1</sup>
-  - **A_SCOL. Tableau de Bord (Scolarité)** (distinct du Tableau de Bord Conformité) : Libellé "Tableau de Bord Scolarité", Icône Maison ou Graphique.
-  - **F. Gestion des Étudiants** : Libellé "Étudiants", Icône Groupe d'utilisateurs.
-  - **G. Inscriptions** : Libellé "Inscriptions", Icône Formulaire ou Calendrier.
-  - **H. Gestion des Stages** : Libellé "Gestion des Stages", Icône Mallette.
-  - **I. Génération Comptes Étudiants** : Libellé "Comptes Étudiants", Icône Clé ou Utilisateur avec +.
-  - **J. Notes et Évaluations (si habilité par traitement)** : Libellé "Notes & Évaluations", Icône Crayon ou Diplôme.
-  - **K. Génération de Documents PDF** : Libellé "Documents Officiels PDF", Icône Imprimante ou PDF.
-  - **D. Messagerie Interne (commun)**.
-  - **E. Mon Profil (commun)**.
-
-### **C. Fonctionnalités Détaillées par Rôle et Onglet**
-
-#### **Partie I : Agent de Contrôle de Conformité (GRP_AGENT_CONF)** <sup>1</sup>
-
-##### **A. Onglet: Tableau de Bord (Conformité)** <sup>1</sup>
-
-- **Objectif** : Fournir à l'Agent de Conformité un aperçu rapide de sa charge de travail et des indicateurs clés relatifs à la conformité des rapports.
-- **Contenu et Widgets** :
-  - **A.1. Nombre de Rapports en Attente de Vérification** :
-    - **Affichage** : Chiffre clé en grand.
-    - **Logique SQL** : SELECT COUNT(r.id_rapport_etudiant) FROM rapport_etudiant r JOIN inscrire i ON r.numero_carte_etudiant = i.numero_carte_etudiant WHERE r.id_statut_rapport = 'RAP_SOUMIS' AND i.id_annee_academique = (SELECT id_annee_academique FROM annee_academique WHERE est_active = 1 LIMIT 1); Cette requête compte les rapports soumis (RAP_SOUMIS) pour l'année académique active.
-    - **Lien** : Vers l'onglet "Rapports à Vérifier" (B).
-  - **A.2. Rapports Vérifiés Récemment par l'Agent (ex: 5 derniers)** :
-    - **Affichage** : Liste concise : Titre du rapport, Nom étudiant, Date de vérification, Statut de conformité donné.
-    - **Logique SQL** : SELECT r.id_rapport_etudiant, r.libelle_rapport_etudiant, e.nom AS nom_etudiant, e.prenom AS prenom_etudiant, s.libelle_statut_conformite, a.date_verification_conformite FROM approuver a JOIN rapport_etudiant r ON a.id_rapport_etudiant = r.id_rapport_etudiant JOIN statut_conformite_ref s ON a.id_statut_conformite = s.id_statut_conformite JOIN etudiant e ON r.numero_carte_etudiant = e.numero_carte_etudiant WHERE a.numero_personnel_administratif = '' ORDER BY a.date_verification_conformite DESC LIMIT 5; Cette requête récupère les actions de vérification les plus récentes effectuées par l'agent connecté.
-  - **A.3. Alertes (Optionnel, si configuré par Admin Système en D.2.3 du Module Admin)** :
-    - Liste des rapports en attente de vérification depuis plus de X jours (X étant un systeme_parametres.param_value).
-  - **A.4. Raccourcis** : Bouton "Vérifier le prochain rapport en attente".
-
-##### **B. Onglet: Rapports à Vérifier** <sup>1</sup>
-
-- **Objectif** : Lister tous les rapports étudiants dont les informations ont été soumises (saisies textuellement) et sont en attente du contrôle de conformité par l'agent.
-- **Contenu et Fonctionnalités** :
-  - **B.1. Tableau des Rapports en Attente de Vérification de Conformité** :
-    - **Colonnes** : id_rapport_etudiant (PK), numero_carte_etudiant (de rapport_etudiant), Nom & Prénom Étudiant (jointure avec etudiant), libelle_rapport_etudiant (titre du rapport), rapport_etudiant.date_soumission.
-    - **Tri** : Par date_soumission (le plus ancien en premier par défaut, pour traiter en FIFO), par nom d'étudiant.
-    - **Pagination**.
-    - **Logique SQL** : SELECT r.id_rapport_etudiant, r.numero_carte_etudiant, etu.nom, etu.prenom, r.libelle_rapport_etudiant, r.date_soumission FROM rapport_etudiant r JOIN etudiant etu ON r.numero_carte_etudiant = etu.numero_carte_etudiant JOIN inscrire i ON r.numero_carte_etudiant = i.numero_carte_etudiant WHERE r.id_statut_rapport = 'RAP_SOUMIS' AND i.id_annee_academique = (SELECT id_annee_academique FROM annee_academique WHERE est_active = 1 LIMIT 1) ORDER BY r.date_soumission ASC LIMIT,; Cette requête sélectionne tous les rapports ayant le statut 'RAP_SOUMIS' pour l'année académique active.
-  - **B.2. Action par Ligne: "Vérifier ce Rapport"** :
-    - Mène à l'interface détaillée de vérification de conformité (décrite ci-dessous). L'id_rapport_etudiant est passé en paramètre.
-
-##### **C. Onglet: Historique des Vérifications** <sup>1</sup>
-
-- **Objectif** : Permettre à l'agent de consulter l'historique de toutes les vérifications de conformité qu'il a personnellement effectuées.
-- **Contenu et Fonctionnalités** :
-  - **C.1. Tableau des Rapports Vérifiés par l'Agent Connecté** :
-    - **Colonnes** : id_rapport_etudiant, Nom & Prénom Étudiant, libelle_rapport_etudiant, date_verification_conformite (de approuver), libelle_statut_conformite (de statut_conformite_ref), commentaire_conformite (extrait de approuver.commentaire_conformite).
-    - **Filtres** : Par période (date_verification_conformite), par id_statut_conformite ('CONF_OK', 'CONF_NOK').
-    - **Pagination**.
-    - **Logique SQL** : SELECT r.id_rapport_etudiant, etu.nom, etu.prenom, r.libelle_rapport_etudiant, a.date_verification_conformite, sc.libelle_statut_conformite, SUBSTRING(a.commentaire_conformite, 1, 150) AS commentaire_extrait FROM approuver a JOIN rapport_etudiant r ON a.id_rapport_etudiant = r.id_rapport_etudiant JOIN statut_conformite_ref sc ON a.id_statut_conformite = sc.id_statut_conformite JOIN etudiant etu ON r.numero_carte_etudiant = etu.numero_carte_etudiant WHERE a.numero_personnel_administratif = '' ORDER BY a.date_verification_conformite DESC LIMIT,; Cette requête récupère l'historique des vérifications pour l'agent spécifique.
-  - **C.2. Action par Ligne: "Voir Détails de la Vérification"** :
-    - Affiche une vue en lecture seule de toutes les informations de la vérification (similaire à l'interface du workflow de conformité mais non modifiable), y compris le contenu du rapport tel qu'il était au moment de la vérification et le commentaire complet de conformité.
-
-##### **Workflow : Processus de Vérification de Conformité d'un Rapport (Interface et Logique)** <sup>1</sup>
-
-Ce workflow détaille les étapes et fonctionnalités lorsque l'Agent de Conformité examine un rapport étudiant soumis.
-
-- **Accès** : Via l'action "Vérifier ce Rapport" sur une ligne de l'onglet B. L'id_rapport_etudiant est transmis en paramètre.
-- **Interface Détaillée de Vérification** :
-  - **Section 1 : En-tête Récapitulatif du Rapport et de l'Étudiant** : <sup>1</sup>
-    - Affiche les données de rapport_etudiant : id_rapport_etudiant, libelle_rapport_etudiant, theme, resume, numero_attestation_stage (si pertinent), nombre_pages (déclaré par l'étudiant), date_soumission.
-    - Affiche les données de etudiant (via rapport_etudiant.numero_carte_etudiant) : numero_carte_etudiant, Nom & Prénom.
-    - Affiche les informations d'inscription pour l'année active (via inscrire et rapport_etudiant.numero_carte_etudiant, jointure avec annee_academique et niveau_etude) : libelle_niveau_etude, libelle_annee_academique.
-  - **Section 2 : Consultation du Contenu du Rapport Soumis par l'Étudiant (TEXTUEL)** : <sup>1</sup>
-    - Pour chaque document_soumis lié à cet id_rapport_etudiant (filtré par la dernière version pour chaque id_type_document) :
-      - Affichage du type_document_ref.libelle_type_document (ex: "Résumé du Rapport", "Corps Principal", "Bibliographie").
-      - Affichage du document_soumis.contenu_textuel dans une zone de texte en lecture seule (potentiellement avec un rendu HTML simple si l'éditeur de l'étudiant a permis un formatage de base).
-    - Aucun fichier à télécharger ou à ouvrir. L'agent lit le contenu directement dans l'interface.
-  - **Section 3 : Checklist de Conformité (basée sur les règles de ServiceConfigurationSysteme)** : <sup>1</sup>
-    - Affichage des critères de conformité définis par l'Admin Système (via D.2.2 du Module Admin) :
-      - Liste des type_document_ref.libelle_type_document (interprétés comme des sections d'information) qui sont marqués requis_ou_non = 1. L'agent coche manuellement une case "Présent et Conforme" ou "Absent/Non Conforme" pour chaque section requise après avoir lu le contenu dans la Section 2.
-    - Rappel du nombre de pages min/max attendu. L'agent compare avec rapport_etudiant.nombre_pages (déclaré) et évalue la plausibilité par rapport au volume de contenu_textuel visible.
-    - **Vérification du Statut Administratif de l'Étudiant** : Le système affiche un indicateur clair (ex: "Scolarité: PAYÉE", "Stage: ENREGISTRÉ") basé sur les données de inscrire.id_statut_paiement et l'existence d'un faire_stage pour l'étudiant et l'année académique active. L'agent confirme visuellement ces prérequis.
-  - **Section 4 : Décision de Conformité et Commentaires** : <sup>1</sup>
-    - **Choix de la Décision (Boutons Radio obligatoires)** :
-      - Option 1 : "Conforme" (correspond à id_statut_conformite = 'CONF_OK').
-      - Option 2 : "Incomplet / Non Conforme" (correspond à id_statut_conformite = 'CONF_NOK').
-    - **Champ commentaire_conformite (TEXT, dans la table approuver)** :
-      - Ce champ est obligatoire si la décision est "Incomplet / Non Conforme".
-      - L'agent doit y détailler de manière claire et constructive les points de non-conformité et les corrections attendues par l'étudiant (ex: "La section 'Bibliographie' est manquante.", "Le résumé dépasse la longueur autorisée de X mots.", "Le contenu de la section 'Méthodologie' est insuffisant.").
-      - L'interface peut proposer une liste de motifs de non-conformité standards (pré-configurés par l'Admin Système) que l'agent peut sélectionner, en complément d'un champ de texte libre pour des précisions.
-  - **Section 5 : Bouton d'Action: "Enregistrer la Décision de Conformité"** <sup>1</sup>
-- **Workflow de Traitement (appel à ServiceConformite.traiterVerificationConformite)** : <sup>1</sup>
-    1. L'Agent de Conformité soumet le formulaire de décision après avoir examiné toutes les sections.
-    2. **Données d'Entrée pour le service** : id_rapport_etudiant, numero_personnel_administratif (de l'agent connecté, récupéré de la session PHP), id_statut_conformite (la valeur 'CONF_OK' ou 'CONF_NOK' correspondant au choix), commentaire_conformite (si 'CONF_NOK', sinon NULL ou chaîne vide).
-    3. **Le service exécute la logique suivante (en utilisant une transaction de base de données)** :
-        - INSERT INTO approuver (numero_personnel_administratif, id_rapport_etudiant, id_statut_conformite, commentaire_conformite, date_verification_conformite) VALUES (?,?,?,?, NOW());
-        - **Détermination du nouveau id_statut_rapport pour la table rapport_etudiant** :
-            - Si id_statut_conformite était 'CONF_OK', alors id_nouveau_statut_rapport = 'RAP_CONF' (Conforme, transmis à la commission).
-            - Si id_statut_conformite était 'CONF_NOK', alors id_nouveau_statut_rapport = 'RAP_NON_CONF' (Non conforme, retourné à l'étudiant pour corrections).
-        - UPDATE rapport_etudiant SET id_statut_rapport = \[id_nouveau_statut_rapport\] WHERE id_rapport_etudiant =?;
-        - **Journalisation de l'action dans enregistrer** : id_action = 'ACTION_VERIF_CONF_RAP', type_entite_concernee = 'RAPPORT_ETUDIANT', id_entite_concernee = id_rapport_etudiant, details_action (JSON) contenant { "decision_conformite": "CONF_OK/CONF_NOK", "commentaire": "..." }.
-        - Commit de la transaction. Si une erreur survient, un rollback est effectué et un message d'erreur est présenté à l'agent.
-    4. **Notifications Post-Traitement (déclenchées par ServiceConformite via ServiceNotification, qui peut appeler ServiceEmail)** : <sup>1</sup>
-        - **Notification à l'Étudiant (recevoir et email)** :
-            - Si 'CONF_OK' : Message type "Félicitations, les informations de votre rapport '\[libelle_rapport_etudiant\]' ont été jugées conformes et ont été transmises à la commission pédagogique pour évaluation."
-            - Si 'CONF_NOK' : Message type "Les informations de votre rapport '\[libelle_rapport_etudiant\]' ont été jugées non conformes. Motifs et corrections attendues: \[contenu de approuver.commentaire_conformite\]. Veuillez apporter les modifications nécessaires directement sur la plateforme et resoumettre le contenu de votre rapport avant le ."
-        - **Notification à la Commission (au groupe GRP_COMMISSION via recevoir, si 'CONF_OK')** : Message type "Un nouveau rapport '\[libelle_rapport_etudiant\]' soumis par l'étudiant \[Nom Prénom Étudiant\] est maintenant disponible pour évaluation par la commission."
-    5. L'agent est redirigé vers la liste "Rapports à Vérifier" (onglet B), qui est actualisée (le rapport traité n'y figure plus). Ce rapport apparaît désormais dans son "Historique des Vérifications" (onglet C).
-
-#### **Partie II : Responsable Scolarité (GRP_GEST_SCOL)** <sup>1</sup>
-
-##### **A_SCOL. Onglet: Tableau de Bord (Scolarité)** <sup>1</sup>
-
-- **Objectif** : Fournir au Responsable Scolarité un aperçu de ses tâches principales et des indicateurs clés de gestion des étudiants.
-- **Contenu et Widgets** :
-  - **A_SCOL.1. Nombre d'Étudiants Actifs** (pour l'année académique en cours annee_academique.est_active = 1) :
-    - **Logique SQL** : SELECT COUNT(DISTINCT e.numero_carte_etudiant) FROM etudiant e JOIN inscrire i ON e.numero_carte_etudiant = i.numero_carte_etudiant WHERE i.id_annee_academique = (SELECT id_annee_academique FROM annee_academique WHERE est_active = 1 LIMIT 1);
-  - **A_SCOL.2. Étudiants Éligibles en Attente de Génération de Compte Utilisateur** :
-    - **Affichage** : Nombre d'étudiants pour lesquels inscrire.id_statut_paiement est 'PAIE_OK' (ou équivalent "Payé/Exonéré") pour l'année active ET un faire_stage est enregistré pour l'année active, MAIS pour lesquels etudiant.numero_utilisateur est NULL OU le utilisateur lié (via etudiant.numero_utilisateur) a un statut_compte indiquant une création non finalisée (ex: 'creation_en_attente_par_RS').
-    - **Logique applicative complexe** pour identifier ces cas.
-    - **Lien** : Vers l'onglet "Génération Comptes Étudiants" (I).
-  - **A_SCOL.3. Inscriptions Récentes / Mises à Jour de Paiement (ex: 7 derniers jours)** :
-    - Liste des dernières opérations sur inscrire (créations ou modifications de id_statut_paiement à 'PAIE_OK').
-  - **A_SCOL.4. Stages Récemment Enregistrés (ex: 7 derniers jours)** :
-    - Liste des derniers faire_stage créés/modifiés par ce RS.
-  - **A_SCOL.5. Réclamations Étudiantes Assignées ou Non Traitées** (celles concernant la scolarité, les stages, ou les demandes de reprise de processus) :
-    - Si le RS traite certains type_reclamation_ref.
-    - **Logique SQL** : SELECT COUNT(\*) FROM reclamation WHERE id_statut_reclamation IN ('RECLAM_RECUE', 'RECLAM_EN_COURS') AND (numero_personnel_traitant IS NULL OR numero_personnel_traitant = ''); (si un système d'assignation de réclamation est en place).
-  - **A_SCOL.6. Raccourcis** : Vers "Gestion des Étudiants" (F), "Inscriptions" (G), "Gestion des Stages" (H), "Génération Comptes Étudiants" (I).
-
-##### **F. Onglet: Gestion des Étudiants** <sup>1</sup>
-
-- **Objectif** : Permettre au RS de consulter, rechercher, et créer ou modifier les profils de base des étudiants. La suppression physique est réservée à l'Admin Système.
-- **Interface et Fonctionnalités** (similaires au Module Administration B.1, avec des droits adaptés pour le RS) :
-  - **F.1. Listage des Étudiants** :
-    - Tableau affichant numero_carte_etudiant, nom, prenom, login_utilisateur (si compte utilisateur existe et est lié), statut_compte (du compte utilisateur), dernière année/niveau d'inscription.
-    - Filtres et Recherche : Par numero_carte_etudiant, nom/prénom, id_annee_academique d'inscription, id_niveau_etude.
-  - **F.2. Consultation du Profil Détaillé d'un Étudiant** :
-    - Vue consolidée des informations de etudiant, utilisateur (si existe et lié), historique des inscrire, faire_stage. Accès en lecture aux informations des rapport_etudiant (métadonnées et statuts) et evaluer (notes) pour cet étudiant.
-  - **F.3. Création d'un Nouveau Profil Étudiant (par le RS)** :
-    - **Contexte** : Pour des inscriptions tardives ou des cas non couverts par l'import initial de l'Admin Système.
-    - **Formulaire** : Saisie des informations de la table etudiant (numero_carte_etudiant unique, nom, prenom, date_naissance, adresse, contacts, etc.). Le champ etudiant.numero_utilisateur n'est pas saisi ici ; il sera lié lors de la génération du compte.
-    - **Logique** (appel à une méthode de ServiceAuthentification ou service dédié, ex: creerProfilEtudiantSeul) :
-      - Validation des données (unicité numero_carte_etudiant).
-      - INSERT INTO etudiant (numero_carte_etudiant, nom, prenom,..., numero_utilisateur) VALUES (?,?,..., NULL);
-      - Journalisation dans enregistrer (id_action = 'ACTION_CREATE_PROFIL_ETUD_RS', type_entite_concernee = 'ETUDIANT', id_entite_concernee = numero_carte_etudiant).
-    - **Note** : Cette action par le RS crée uniquement le profil etudiant. Le compte utilisateur sera généré séparément via l'onglet I une fois tous les prérequis (scolarité à jour ET stage enregistré) remplis.
-  - **F.4. Modification des Informations Administratives d'un Étudiant** :
-    - Le RS peut modifier la plupart des champs de etudiant (ex: adresse_postale, telephone, contact_urgence_nom, email_contact_secondaire). La modification du nom, prenom, date_naissance, numero_carte_etudiant est généralement réservée à l'Admin Système ou nécessite une procédure de validation plus stricte avec justificatifs.
-    - **Logique SQL** : UPDATE etudiant SET... WHERE numero_carte_etudiant =?;. Journalisation détaillée dans enregistrer.
-
-##### **G. Onglet: Inscriptions** <sup>1</sup>
-
-- **Objectif** : Gérer le processus d'inscription administrative et pédagogique des étudiants pour chaque année académique.
-- **Interface et Fonctionnalités** (similaires au Module Administration E.1 et B.1.7) :
-  - **G.1. Sélection de l'Étudiant** : Champ de recherche pour trouver un etudiant par numero_carte_etudiant ou nom/prénom.
-  - **G.2. Affichage de l'Historique des Inscriptions de l'Étudiant Sélectionné** :
-    - Tableau listant ses inscriptions passées et actuelles (depuis inscrire), avec libelle_annee_academique, libelle_niveau_etude, date_inscription, montant_inscription, libelle_statut_paiement, date_paiement, numero_recu_paiement (unique si renseigné), libelle_decision_passage.
-  - **G.3. Ajout d'une Nouvelle Inscription (pour l'étudiant sélectionné)** :
-    - **Formulaire** :
-      - Choix id_annee_academique (liste déroulante des annee_academique, souvent l'année active par défaut).
-      - Choix id_niveau_etude (liste déroulante des niveau_etude).
-      - Saisie montant_inscription (DECIMAL).
-      - date_inscription (DATETIME, aujourd'hui par défaut).
-      - Choix id_statut_paiement (VARCHAR(50) FK vers statut_paiement_ref, souvent 'PAIE_NOK' ou un statut "En attente de paiement" par défaut).
-      - Champs optionnels : date_paiement (DATETIME), numero_recu_paiement (VARCHAR(50), doit être unique dans la table inscrire si renseigné), id_decision_passage (VARCHAR(50) FK vers decision_passage_ref, pour les réinscriptions).
-    - **Logique** (via ServiceGestionAcademique.creerInscriptionAdministrative) :
-      - Validation (pas de double inscription au même niveau/année pour le même étudiant ; unicité de numero_recu_paiement si fourni).
-      - INSERT INTO inscrire. Journalisation dans enregistrer.
-  - **G.4. Modification d'une Inscription Existante** :
-    - Principalement pour mettre à jour id_statut_paiement (ex: de 'PAIE_NOK' à 'PAIE_OK quand le paiement est confirmé par le RS), date_paiement, numero_recu_paiement.
-
-\* Enregistrer/modifier id_decision_passage en fin d'année.
-
-\* Logique (via ServiceGestionAcademique.mettreAJourInscriptionAdministrative) : UPDATE inscrire SET... WHERE numero_carte_etudiant =? AND id_niveau_etude =? AND id_annee_academique =?;. Journalisation.
-
-\* Impact : La mise à jour de id_statut_paiement à 'PAIE_OK' (ou un équivalent "Payé/Exonéré") pour l'année académique active est l'un des prérequis, avec le stage enregistré, pour que le Responsable Scolarité puisse générer le compte utilisateur de l'étudiant via l'onglet I. 1
-
-##### H. Onglet: Gestion des Stages <sup>1</sup>
-
-- **Objectif** : Enregistrer et valider les informations de stage des étudiants. Cet enregistrement est un des prérequis pour l'accès à la plateforme et la soumission du contenu du rapport. Les informations sont basées sur des justificatifs physiques fournis par l'étudiant (ex: convention de stage signée) et saisies manuellement par le RS.
-- **Interface et Fonctionnalités** :
-  - **H.1. Sélection de l'Étudiant** :
-    - **Interface** : Champ de recherche (texte libre ou auto-complétion) pour trouver l'étudiant par numero_carte_etudiant ou nom/prénom.
-    - **Interaction** : Une fois l'étudiant sélectionné, son nom et numéro de carte sont affichés en en-tête, et le tableau des stages (H.2) est filtré.
-  - **H.2. Affichage des Stages Enregistrés pour l'Étudiant Sélectionné** :
-    - **Interface** : Tableau des faire_stage de l'étudiant.
-    - **Colonnes** : libelle_entreprise (via id_entreprise et jointure sur entreprise), date_debut_stage, date_fin_stage, sujet_stage (extrait), nom_tuteur_entreprise.
-    - **Actions par Ligne** : "Modifier ce Stage", "Supprimer ce Stage".
-  - **H.3. Ajout/Enregistrement d'un Nouveau Stage (par le RS)** :
-    - **Déclenchement** : Bouton "Ajouter un Nouveau Stage".
-    - **Interface du Formulaire** :
-      - id_entreprise (VARCHAR(50) FK vers entreprise) : Liste déroulante des entreprise.libelle_entreprise. Si l'entreprise n'existe pas, le RS doit demander à l'Admin Système de l'ajouter (via D.1.8 du Module Admin). Le RS ne crée pas d'entreprise. Validation : Sélection obligatoire. <sup>1</sup>
-      - date_debut_stage (DATE) : Sélecteur de date. Validation : Obligatoire. <sup>1</sup>
-      - date_fin_stage (DATE, optionnel si en cours) : Sélecteur de date. Validation : Si renseignée, doit être > date_debut_stage. <sup>1</sup>
-      - sujet_stage (TEXT) : Zone de texte. Validation : Obligatoire. <sup>1</sup>
-      - nom_tuteur_entreprise (VARCHAR(100)) : Champ texte. Validation : Obligatoire. <sup>1</sup>
-    - **Logique Algorithmique/SQL** (via ServiceGestionAcademique.enregistrerInformationsStage) :
-            1. Validation des données (cohérence dates, étudiant inscrit pour l'année du stage).
-            2. INSERT INTO faire_stage (id_entreprise, numero_carte_etudiant, date_debut_stage, date_fin_stage, sujet_stage, nom_tuteur_entreprise) VALUES (?,?,?,?,?,?);
-            3. Journalisation dans enregistrer (id_action = 'ACTION_ENREG_STAGE_RS').
-            4. Message de succès/erreur. Rafraîchissement du tableau H.2.
-    - **Impact** : Cet enregistrement valide le prérequis "Stage Effectué" pour la génération du compte étudiant. <sup>1</sup>
-  - **H.4. Modification des Informations d'un Stage** :
-    - **Déclenchement** : Clic sur "Modifier ce Stage" (H.2).
-    - **Interface** : Formulaire similaire à H.3, pré-rempli.
-    - **Champs Modifiables** : Dates, sujet, tuteur, entreprise (si erreur de saisie).
-    - **Logique Algorithmique/SQL** (via ServiceGestionAcademique.mettreAJourInformationsStage) :
-            1. Validation des modifications.
-            2. UPDATE faire_stage SET... WHERE id_entreprise =? AND numero_carte_etudiant =?; (clause WHERE basée sur PK composite).
-            3. Journalisation détaillée dans enregistrer (id_action = 'ACTION_MODIF_STAGE_RS', anciennes/nouvelles valeurs).
-            4. Message et rafraîchissement.
-  - **H.5. Suppression d'un Enregistrement de Stage (Fonctionnalité Conditionnelle)** :
-    - **Cas d'Usage** : Uniquement si stage enregistré par erreur manifeste et SANS impact sur compte étudiant déjà activé ou rapport soumis.
-    - **Déclenchement** : Bouton "Supprimer ce Stage".
-    - **Workflow** :
-            1. Confirmation forte.
-            2. Vérification des dépendances serveur : rapport_etudiant lié à l'année du stage, utilisateur.statut_compte de l'étudiant (si déjà activé grâce à ce stage).
-            3. Si dépendances, suppression bloquée.
-            4. Logique SQL : DELETE FROM faire_stage WHERE id_entreprise =? AND numero_carte_etudiant =?;. Journalisation (id_action = 'ACTION_SUPPR_STAGE_RS').
-            5. Message et rafraîchissement.
-
-##### I. Onglet: Génération Comptes Étudiants <sup>1</sup>
-
-- **Objectif** : Permettre au RS de générer les comptes utilisateurs (utilisateur) pour les étudiants qui remplissent les conditions d'accès : scolarité à jour ET stage enregistré.
-- **Interface et Fonctionnalités** :
-  - **I.1. Liste des Étudiants Éligibles à la Création/Activation de Compte** :
-    - **Interface** : Tableau listant les étudiants (numero_carte_etudiant, nom, prenom) remplissant les critères.
-    - **Logique de Requête (Complexe)** :
-
-            1. Inscription active (annee_academique.est_active = 1).
-            2. Statut de paiement OK (inscrire.id_statut_paiement = 'PAIE_OK').
-            3. Stage enregistré (faire_stage pour l'année active/pertinente).
-            4. etudiant.numero_utilisateur est NULL OU utilisateur.statut_compte lié indique une création non finalisée (ex: 'creation_en_attente_par_RS').
-
-      - _Exemple SQL simplifié_ :  
-                SQL  
-                SELECT e.numero_carte_etudiant, e.nom, e.prenom  
-                FROM etudiant e  
-                JOIN inscrire i ON e.numero_carte_etudiant = i.numero_carte_etudiant  
-                JOIN annee_academique aa ON i.id_annee_academique = aa.id_annee_academique  
-                JOIN faire_stage fs ON e.numero_carte_etudiant = fs.numero_carte_etudiant  
-                WHERE aa.est_active = 1 AND i.id_statut_paiement = 'PAIE_OK'  
-                AND fs.date_debut_stage <= CURDATE() -- Stage commencé  
-                AND (e.numero_utilisateur IS NULL OR  
-                (SELECT u.statut_compte FROM utilisateur u WHERE u.numero_utilisateur = e.numero_utilisateur)  
-                IN ('creation_en_attente_par_RS', 'jamais_connecte_apres_creation_profil'))  
-                GROUP BY e.numero_carte_etudiant, e.nom, e.prenom;  
-
-    - **Interaction** : Case à cocher par ligne ou bouton "Générer Compte".
-  - **I.2. Action par Ligne ou en Masse: "Générer et Activer Compte Utilisateur"** :
-    - **Déclenchement** : Sélection et clic sur bouton "Générer et Activer Compte(s) Utilisateur".
-    - **Workflow Algorithmique/SQL** (appel à ServiceAuthentification.genererEtActiverCompteEtudiantPourRS) :
-            1. Confirmation par le RS.
-            2. Pour chaque étudiant sélectionné :
-                - Re-vérification finale des prérequis. Si non remplis, ignorer et loguer.
-                - **Gestion numero_utilisateur** :
-
-Si etudiant.numero_utilisateur est NULL : Générer numero_utilisateur unique (ex: "USR_ETU_" + UUID). UPDATE etudiant SET numero_utilisateur =? WHERE numero_carte_etudiant =?;.
-
-Sinon, utiliser etudiant.numero_utilisateur existant.
-
-- - - - - Générer login_utilisateur unique (ex: prenom.nom, avec résolution de conflits).
-                - Assigner utilisateur.email_principal (ex: etudiant.email_contact_secondaire).
-                - Générer mot de passe initial sécurisé (haché).
-                - **Préparation données utilisateur** : id_type_utilisateur = 'TYPE_ETUD', id_groupe_utilisateur = 'GRP_ETUDIANT', id_niveau_acces_donne (défaut étudiant), statut_compte = 'actif' (ou 'en_attente_validation' si validation email requise), email_valide (0 ou 1), token_validation_email (si email_valide=0), date_creation = NOW().
-                - **Opération BDD** :
-
-Si compte utilisateur existant (finalisation) : UPDATE utilisateur SET... WHERE numero_utilisateur =?;.
-
-Sinon (nouveau compte) : INSERT INTO utilisateur (...) VALUES (...);.
-
-- - - - - Journalisation dans enregistrer (id_action = 'ACTION_GEN_COMPTE_ETUD_RS').
-                - Envoi email d'activation/bienvenue (via ServiceEmail appelé par ServiceNotification) avec login, MDP (ou lien de définition), URL. Création recevoir pour notif interne.
-
-            1. Message de succès global au RS.
-            2. Actualisation de la liste I.1.
-
-##### J. Onglet: Notes et Évaluations <sup>1</sup>
-
-- **Objectif** : Permettre au RS de saisir des notes (si habilité, ex: pour évaluations spécifiques ou en cas d'absence d'enseignant) ou de consulter les notes pour vérifications administratives ou préparation de documents. L'habilitation est contrôlée par traitement.
-- **Interface et Fonctionnalités** :
-  - **J.1. Sélection Étudiant / ECUE / Année Académique** :
-    - **Interface** : Listes déroulantes/champs de recherche pour cibler la note.
-  - **J.2. Formulaire de Saisie/Modification de Note (evaluer.note)** :
-    - **Déclenchement** : Bouton "Saisir Nouvelle Note" ou "Modifier Note".
-    - **Interface Formulaire** : numero_carte_etudiant (lecture seule), id_ecue (sélectionnable), numero_enseignant évaluateur (liste déroulante), date_evaluation (sélecteur date/heure), note (numérique, 0-20).
-    - **Logique Algorithmique/SQL** (via ServiceGestionAcademique.enregistrerNoteEcue ou MàJ) :
-            1. Validation des données.
-            2. Vérification unicité (pour nouvelle note) sur PK composite (numero_carte_etudiant, numero_enseignant, id_ecue).
-            3. Vérification période de saisie des notes (si configurée en E.2.2 du Module Admin).
-            4. Transaction BDD : INSERT INTO evaluer ou UPDATE evaluer. Journalisation rigoureuse dans enregistrer (id_action = 'ACTION_SAISIE_NOTE_RS' ou ACTION_MODIF_NOTE_RS).
-            5. Message et rafraîchissement.
-  - **J.3. Consultation des Notes d'un Étudiant** :
-    - **Interface** : Tableau des notes de l'étudiant (filtré par année/UE).
-    - **Colonnes** : libelle_ecue, libelle_ue, note, date_evaluation, nom_evaluateur.
-    - **Calculs (Optionnel)** : Moyennes par UE/générale.
-    - **Action par Ligne** : "Modifier cette Note".
-
-##### K. Onglet: Génération de Documents PDF Officiels <sup>1</sup>
-
-- **Objectif** : Permettre au RS de générer à la demande des documents administratifs courants pour les étudiants (attestations de scolarité, reçus de paiement, relevés de notes) au format PDF.
-- **Interface et Fonctionnalités** :
-  - **K.1. Sélection de l'Étudiant** :
-    - **Interface** : Champ de recherche (numero_carte_etudiant ou nom/prénom).
-  - **K.2. Sélection du Type de Document PDF à Générer** :
-    - **Interface** : Liste déroulante des modèles de documents pertinents pour le RS (habilitations via traitement et rattacher).
-    - **Exemples** : "Attestation de Scolarité (Année Active)", "Relevé de Notes (par Année/Semestre)", "Reçu de Paiement Frais d'Inscription".
-  - **K.3. Bouton "Générer et Télécharger le Document PDF"** :
-    - **Déclenchement** : Clic après sélections.
-    - **Logique Algorithmique/SQL** (appel à ServiceDocumentGenerator.genererDocumentPDF) :
-            1. Appel du service avec type de document (code modèle) et numero_carte_etudiant (et année si contextuel).
-            2. Récupération du template HTML/CSS (configuré par Admin Système en D.3.1).
-            3. Collecte des données dynamiques (etudiant, inscrire, evaluer, etc.) via services métier.
-            4. Fusion données et template (remplacement placeholders).
-            5. Génération PDF via librairie (Dompdf, TCPDF).
-            6. Téléchargement proposé au RS.
-            7. Stockage optionnel du PDF généré (document_officiel_genere) et journalisation dans enregistrer (id_action = 'ACTION_GEN_DOC_PDF_RS').
-
-#### Partie IV : Fonctionnalités Communes au Personnel Administratif (Référence) <sup>1</sup>
-
-Les fonctionnalités suivantes sont accessibles de manière similaire par l'Agent de Contrôle de Conformité et le Responsable Scolarité, avec un contexte adapté à leur rôle.
-
-##### D. Messagerie Interne <sup>1</sup>
-
-- **Objectif** : Faciliter la communication et la coordination avec les étudiants, les autres membres du personnel, et potentiellement les membres de la commission.
-- **Interface et Fonctionnalités** (gérées par ServiceMessagerie.php) :
-  - **D.1. Liste des Conversations** : Affiche les conversations (conversation) où l'agent est participant_conversation. Tri par date dernier message. Indicateur de messages non lus.
-  - **D.2. Interface de Chat pour une Conversation Sélectionnée** :
-    - Affichage des message_chat (avec contenu_message, numero_utilisateur_expediteur, date_envoi).
-    - Champ de saisie pour envoyer un nouveau message.
-    - Marquage automatique des messages comme lus (recevoir.lue = 1) lors de l'ouverture de la conversation.
-  - **D.3. Démarrer une Nouvelle Conversation** :
-    - Recherche d'utilisateurs (utilisateur) pour initier une conversation directe ou créer un groupe.
-- **Logique** : Implique les tables conversation, participant_conversation, message_chat, recevoir. Les actions sont journalisées.
-
-##### E. Mon Profil <sup>1</sup>
-
-- **Objectif** : Permettre à l'agent de consulter et de modifier ses propres informations de compte et de profil.
-- **Interface et Fonctionnalités** :
-  - **E.1. Consultation des Informations Personnelles et Professionnelles** (issues de personnel_administratif) :
-    - Champs en lecture seule : numero_personnel_administratif, nom, prenom, date_affectation_service.
-    - Champs modifiables : telephone_professionnel, email_professionnel (avec revalidation si email_principal est lié), adresse_postale, telephone_personnel.
-  - **E.2. Gestion du Compte Utilisateur** (issues de utilisateur) :
-    - login_utilisateur (lecture seule).
-    - email_principal (modifiable, avec revalidation).
-    - Modification du mot de passe (formulaire : ancien MDP, nouveau MDP, confirmation). Logique via ServiceAuthentification.modifierMotDePasseUtilisateur.
-    - Gestion photo_profil.
-    - Préférences de notification (si utilisateur.preferences_notifications JSON).
-    - Gestion 2FA (activation/désactivation, codes de secours).
-- **Logique** : UPDATE personnel_administratif ou UPDATE utilisateur. Journalisation dans enregistrer.
-
-#### Tables SQL Primordialement Impliquées pour le Module Personnel Administratif (Synthèse) <sup>1</sup>
-
-- **Profils et Comptes Agents** : personnel_administratif, utilisateur. <sup>1</sup>
-- **Droits et Rôles Agents** : groupe_utilisateur, rattacher, traitement. <sup>1</sup>
-- **Gestion Conformité (Agent Conformité)** : rapport_etudiant, statut_rapport_ref, approuver, statut_conformite_ref, etudiant, document_soumis (pour lire contenu_textuel), type_document_ref. <sup>1</sup>
-- **Gestion Étudiants (RS)** : etudiant, utilisateur. <sup>1</sup>
-- **Gestion Inscriptions (RS)** : inscrire, annee_academique, niveau_etude, statut_paiement_ref, decision_passage_ref. <sup>1</sup>
-- **Gestion Stages (RS)** : faire_stage, entreprise. <sup>1</sup>
-- **Gestion Notes (RS, si habilité)** : evaluer, ecue, ue, enseignant. <sup>1</sup>
-- **Communication** : conversation, message_chat, participant_conversation, recevoir, notification. <sup>1</sup>
-- **Audit** : enregistrer. <sup>1</sup>
-- **Référentiels Consultés** : Nombreuses tables \_ref. <sup>1</sup>
-- **Génération PDF** : (Indirectement) modeles_pdf_config (conceptuelle), et toutes les tables sources de données. <sup>1</sup>
-
-## Partie III : Module Étudiant <sup>1</sup>
-
-Le Module Étudiant de "GestionMySoutenance" est l'interface personnalisée et sécurisée pour chaque étudiant engagé dans le processus de rédaction et de validation de son rapport.
-
-### A. Introduction et Objectifs du Module Étudiant <sup>1</sup>
-
-- **Objectif Général** : Centraliser informations et actions relatives au parcours de l'étudiant (saisie/soumission du contenu du rapport, suivi, communication, accès aux ressources et documents PDF). <sup>1</sup>
-- **Conditions d'Accès** : Compte utilisateur généré par le Responsable Scolarité après vérification de prérequis stricts : scolarité à jour (inscrire.id_statut_paiement = 'Payé/Exonéré' pour l'année active) ET stage effectué et enregistré (faire_stage validé). <sup>1</sup>
-- **Processus de Génération de Compte** : Le RS initie la création. ServiceAuthentification crée l'enregistrement utilisateur (id_type_utilisateur = 'TYPE_ETUD'), met à jour etudiant.numero_utilisateur. Email envoyé à utilisateur.email_principal avec identifiants/lien de définition MDP. <sup>1</sup>
-- **Environnement Fermé** : L'étudiant ne téléverse aucun fichier pour son rapport. Tout le contenu (texte, résumé, bibliographie) est saisi via des formulaires et éditeurs de texte enrichi. <sup>1</sup>
-
-### B. Interface Utilisateur Principale (Header, Sidebar) <sup>1</sup>
-
-- **Header Proposé** : "Mon Espace MySoutenance - \[Nom Prénom Étudiant\]". Affiche logo, nom étudiant, lien "Mon Profil", indicateur notifications non lues, bouton déconnexion, année académique active. <sup>1</sup>
-- **Sidebar Dynamique** :
-  - A. Tableau de Bord
-  - B. Mon Profil
-  - C. Mon Rapport
-  - D. Mes Documents PDF
-  - E. Mes Réclamations
-  - F. Ressources & Aide <sup>1</sup>
-
-### C. Fonctionnalités Détaillées par Onglet
-
-#### A. Onglet: Tableau de Bord Étudiant <sup>1</sup>
-
-- **Objectif** : Vue d'ensemble immédiate des informations pertinentes et actions requises.
-- **Contenu et Widgets** :
-  - **A.1. Statut Actuel de Mon Rapport** : Affiche libelle_statut_rapport (de rapport_etudiant via statut_rapport_ref) pour l'année active. Lien vers "Mon Rapport" (C). <sup>1</sup>
-  - **A.2. Notifications Récentes Non Lues** : Liste des 3-5 dernières recevoir.lue = 0 (avec notification.libelle_notification, recevoir.date_reception). Lien "Voir toutes les notifications". <sup>1</sup>
-  - **A.3. Alertes et Actions Requises** : Messages contextuels basés sur rapport_etudiant.id_statut_rapport (ex: "Corrections demandées. Date limite : \[date\]"). <sup>1</sup>
-  - **A.4. Raccourcis Rapides (Optionnel)** : "Soumettre mon rapport", "Consulter mes notes (PDF)", "Faire une réclamation". <sup>1</sup>
-
-#### B. Onglet: Mon Profil <sup>1</sup>
-
-- **Objectif** : Consulter et modifier (si autorisé) les informations personnelles et de compte.
-- **Contenu et Fonctionnalités** :
-  - **B.1. Consultation des Informations Personnelles (etudiant)** :
-    - Affichage (lecture seule pour la plupart) : numero_carte_etudiant, nom, prenom, date_naissance, lieu_naissance, pays_naissance, nationalite, sexe, adresse_postale, ville, code_postal.
-    - Champs Modifiables par l'Étudiant : telephone, email_contact_secondaire (format email), contact_urgence_nom, contact_urgence_telephone, contact_urgence_relation. <sup>1</sup>
-  - **B.2. Gestion du Compte Utilisateur (utilisateur)** :
-    - login_utilisateur (lecture seule).
-    - email_principal (modifiable, avec revalidation obligatoire : utilisateur.email_valide -> 0, nouveau token_validation_email généré, email de validation envoyé).
-    - Modification Mot de Passe : Formulaire (Ancien MDP, Nouveau MDP, Confirmer Nouveau MDP). Logique via ServiceAuthentification.modifierMotDePasseUtilisateur. Enregistrement dans historique_mot_de_passe.
-    - Gestion photo_profil (affichage, upload, suppression).
-    - Préférences de Notification (si utilisateur.preferences_notifications JSON). <sup>1</sup>
-  - **Workflow de Modification** : Validation client/serveur. UPDATE etudiant ou UPDATE utilisateur. Enregistrement dans enregistrer. Confirmation. <sup>1</sup>
-
-#### C. Onglet: Mon Rapport <sup>1</sup>
-
-- **Objectif** : Interface centrale pour la saisie, soumission, suivi et gestion des corrections du contenu du rapport.
-- **État Initial (si aucun rapport soumis)** : Message "Vous n'avez pas encore soumis de rapport...". Bouton "Soumettre Mon Rapport de Stage" (actif si prérequis remplis). Affichage des directives de soumission. <sup>1</sup>
-- **C.1. Soumission Initiale du Contenu du Rapport** :
-  - **Déclenchement** : Bouton "Soumettre Mon Rapport de Stage".
-  - **Interface Formulaire (Saisie Textuelle)** :
-    - Champs Métadonnées (rapport_etudiant) : libelle_rapport_etudiant (titre), theme, resume (éditeur riche), numero_attestation_stage, nombre_pages (déclaré). id_annee_academique (auto, non modifiable).
-    - Champs Contenu Rapport (document_soumis.contenu_textuel) : Pour chaque type_document_ref requis (ex: 'DOC_RAP_MAIN', 'DOC_INTRO'), une zone de texte avec éditeur riche.
-    - Case à cocher "Je confirme que ces informations sont mon travail original...". <sup>1</sup>
-  - **Règles Métier & Validations** : Champs obligatoires, contenu non vide pour sections requises, nombre_pages positif. Pas de soumission multiple pour l'année active (sauf si reprise après refus). <sup>1</sup>
-  - **Logique Algorithmique/SQL** (via ServiceRapport.creerEtSoumettreRapportTextuel) :
-        1. Validation serveur.
-        2. Génération id_rapport_etudiant unique.
-        3. INSERT INTO rapport_etudiant (id_statut_rapport = 'RAP_SOUMIS', date_soumission = NOW()).
-        4. Pour chaque section de contenu : INSERT INTO document_soumis (id_rapport_etudiant lié, id_type_document, contenu_textuel, version = 1, date_soumission_version = NOW(), numero_utilisateur_soumission).
-        5. Journalisation (enregistrer, id_action = "SOUMISSION_CONTENU_RAPPORT").
-        6. Transaction BDD. <sup>1</sup>
-  - **Interactions & Post-Soumission** : Interface de soumission verrouillée. Notifications à l'étudiant (accusé) et à l'Agent de Conformité. <sup>1</sup>
-- **C.2. Suivi du Processus de Validation (si rapport soumis)** :
-  - **Interface** : Statut actuel détaillé (libelle_statut_rapport). Historique des statuts (si historique_statut_rapport existe). Commentaires des validateurs (approuver.commentaire_conformite si 'RAP_NON_CONF', compte_rendu.libelle_compte_rendu si 'RAP_CORRECT' par commission). Contenu soumis (lecture seule des document_soumis.contenu_textuel, dernière version). <sup>1</sup>
-- **C.3. Gestion des Corrections du Contenu (si id_statut_rapport = 'RAP_NON_CONF' ou 'RAP_CORRECT')** :
-  - **Interface** : Affichage des motifs/commentaires. Formulaire similaire à C.1, pré-rempli avec contenu_textuel version actuelle. Champ "Note expliquant les modifications apportées". <sup>1</sup>
-  - **Logique Algorithmique/SQL** (via ServiceRapport.soumettreCorrectionsRapportTextuel) :
-        1. Validation.
-        2. Pour chaque section modifiée : INSERT INTO document_soumis (même id_rapport_etudiant, id_type_document, mais version incrémentée et nouveau contenu_textuel).
-        3. UPDATE rapport_etudiant (métadonnées, date_derniere_modif = NOW(), id_statut_rapport -> 'RAP_CORRECT_SOUMISES_CONF' ou 'RAP_CORRECT_SOUMISES_COMM').
-        4. Note explicative stockée (ex: document_soumis type 'DOC_NOTE_CORRECTION').
-        5. Journalisation. Notification à l'instance concernée. Interface verrouillée. <sup>1</sup>
-- **C.4. Cas: Rapport Non Validé par la Commission (id_statut_rapport = 'RAP_REFUSE')** :
-  - **Interface** : Affichage décision refus et motifs/recommandations du PV.
-    - Option 1 : "Modifier le contenu de mon rapport actuel et le resoumettre." -> Interface C.3 active. id_statut_rapport -> 'RAP_REFUSE_MODIF_EN_COURS'.
-    - Option 2 : "Reprendre tout le processus de soumission (implique un nouveau stage ou revalidation)." -> Message : "Pour reprendre..., veuillez soumettre une réclamation via 'Mes Réclamations'...". rapport_etudiant.id_statut_rapport (refusé) -> 'RAP_REFUSE_ARCHIVE'. Interface C.1 verrouillée jusqu'à traitement réclamation et validation nouveau faire_stage par RS. <sup>1</sup>
-- **C.5. Cas: Rapport Validé par la Commission (id_statut_rapport = 'RAP_VALID')** :
-  - **Interface** : Message de félicitations. Affichage du PV. Lien vers "Mes Documents PDF" (D). Verrouillage total des actions de soumission/modification. <sup>1</sup>
-
-#### D. Onglet: Mes Documents PDF <sup>1</sup>
-
-- **Objectif** : Permettre à l'étudiant de télécharger les documents PDF officiels générés par le système le concernant.
-- **Interface et Fonctionnalités** :
-  - **D.1. Liste des Documents PDF Disponibles** : Tableau "Nom du Document", "Date de Génération", "Action". Exemples : "Attestation de Dépôt de Rapport", "Procès-Verbal de Validation", "Bulletin de Notes", "Attestation de Scolarité". <sup>1</sup>
-  - **Logique** : Documents générés par ServiceDocumentGenerator (appelé par autres services/Admin/RS). Accès lecture seule. Stockés dans document_officiel_genere ou générés à la volée. <sup>1</sup>
-  - **D.2. Téléchargement** : Bouton "Télécharger (PDF)". <sup>1</sup>
-
-#### E. Onglet: Mes Réclamations <sup>1</sup>
-
-- **Objectif** : Canal formel pour requêtes, signalements, ou demande de reprise de processus avec nouveau stage.
-- **Interface et Fonctionnalités** (gérées par ServiceReclamation) :
-  - **E.1. Soumission d'une Nouvelle Réclamation** :
-    - Bouton "Faire une Nouvelle Réclamation".
-    - Formulaire : sujet_reclamation\*, id_type_reclamation\* (liste déroulante : "Problème Technique", "Question Statut Rapport", "Demande Reprise Processus Rapport (Nouveau Stage)", etc.), description_reclamation\* (éditeur de texte).
-    - Section Spécifique si id_type_reclamation = "DEM_REPRISE_STAGE" : Case à cocher "Je confirme vouloir reprendre... avec nouveau stage"\*. Options : "En ligne (infos préliminaires)" (champs : nouvelle entreprise, dates, sujet) OU "En présentiel uniquement". L'étudiant ne téléverse PAS de convention. <sup>1</sup>
-    - **Workflow Soumission Réclamation** :
-            1. Validation. INSERT INTO reclamation (statut 'RECLAM_RECUE').
-            2. Si "DEM_REPRISE_STAGE" et option "présentiel" : ServiceReclamation peut notifier ServiceAuthentification pour changer utilisateur.statut_compte à 'SUSPENDU_ATTENTE_RS_STAGE' (bloque C.1).
-            3. Journalisation. Notification à l'étudiant (accusé) et au service concerné (RS pour "DEM_REPRISE_STAGE"). <sup>1</sup>
-  - **E.2. Suivi des Réclamations Soumises** : Tableau des reclamation (id_reclamation, sujet_reclamation, date_soumission, libelle_statut_reclamation, date_reponse). Action "Voir Détails" (affiche description_reclamation, reponse_reclamation). <sup>1</sup>
-
-#### F. Onglet: Ressources & Aide <sup>1</sup>
-
-- **Objectif** : Fournir documents utiles (guides rédaction, modèles plan rapport texte/markdown), FAQ, contacts.
-- **Contenu** :
-  - **F.1. Guides et Modèles** : Guide officiel rédaction (HTML ou lien PDF externe). Modèles plan, page de garde (texte structuré). Critères d'évaluation (texte). <sup>1</sup>
-  - **F.2. Foire Aux Questions (FAQ)**. <sup>1</sup>
-  - **F.3. Contacts Utiles**. <sup>1</sup>
-
-## Partie IV : Module Commission de Validation <sup>1</sup>
-
-Le Module Commission de Validation est l'interface sécurisée pour les membres de la commission pédagogique, leur permettant d'évaluer le contenu des rapports étudiants, de délibérer, de prendre des décisions collectives, de formaliser l'encadrement et de produire les procès-verbaux (PV) officiels. <sup>1</sup>
-
-### A. Introduction et Objectifs du Module Commission <sup>1</sup>
-
-- **Objectif Général** : Permettre l'évaluation approfondie du contenu des rapports (après vérification de conformité), faciliter la délibération et la prise de décision, formaliser l'encadrement, et assurer la production des PV, garantissant rigueur, transparence et traçabilité. <sup>1</sup>
-- **Rôles et Accès** : Membres de la commission (enseignants avec id_groupe_utilisateur = 'GRP_COMMISSION'). Le Président peut avoir des droits étendus (planification sessions, validation finale PV). Accès sécurisé par ServiceAuthentification.php. <sup>1</sup>
-- **Contexte du Processus** : Intervient après que le rapport (contenu textuel et métadonnées) a été jugé conforme par l'Agent de Contrôle de Conformité. <sup>1</sup>
-
-### B. Interface Utilisateur Principale (Header, Sidebar) <sup>1</sup>
-
-- **Header Proposé** : "Espace Commission MySoutenance - \[Nom Commission si applicable\] - \[Nom Prénom Membre\]". Affiche logo, nom membre, lien "Mon Profil", indicateur notifications non lues, bouton déconnexion, année académique active. <sup>1</sup>
-- **Sidebar Dynamique** :
-  - A. Tableau de Bord Commission
-  - B. Rapports à Traiter/Évaluer
-  - C. Gestion des Procès-Verbaux (PV)
-  - D. Gestion des Corrections (Post-Commission)
-  - E. Communication & Concertation
-  - F. Historique & Archives (Commission)
-  - G. Mon Profil (commun) <sup>1</sup>
-
-### C. Fonctionnalités Détaillées par Onglet
-
-#### A. Onglet: Tableau de Bord Commission <sup>1</sup>
-
-- **Objectif** : Aperçu personnalisé des tâches en attente, rapports nécessitant attention, notifications pertinentes.
-- **Contenu et Widgets** :
-  - **A.1. Rapports en Attente d'Examen/Vote pour Moi** : Nombre de rapport_etudiant assignés (si assignation individuelle) ou en attente de vote par la commission et pour lesquels le membre n'a pas encore voté. Lien vers "Rapports à Évaluer" (B). <sup>1</sup>
-    - _Logique SQL (simplifiée)_ : SELECT COUNT(DISTINCT r.id_rapport_etudiant) FROM rapport_etudiant r JOIN affecter aff ON r.id_rapport_etudiant = aff.id_rapport_etudiant LEFT JOIN vote_commission vc ON r.id_rapport_etudiant = vc.id_rapport_etudiant AND vc.numero_enseignant = WHERE r.id_statut_rapport = 'RAP_EN_COMM' AND i.id_annee_academique = AND aff.numero_enseignant = AND vc.id_vote IS NULL; <sup>1</sup>
-  - **A.2. Procès-Verbaux (PV) en Attente de Ma Validation/Action** : Nombre de compte_rendu soumis à validation pour lesquels le membre n'a pas encore enregistré sa décision (si vote sur PV), ou PV qu'il doit rédiger. Lien vers "Procès-Verbaux" (C). <sup>1</sup>
-    - _Logique SQL (pour PV à valider)_ : SELECT COUNT(DISTINCT cr.id_compte_rendu) FROM compte_rendu cr LEFT JOIN validation_pv vp ON cr.id_compte_rendu = vp.id_compte_rendu AND vp.numero_enseignant = WHERE cr.id_statut_pv = 'PV_SOUMIS_VALID' AND vp.id_decision_validation_pv IS NULL; <sup>1</sup>
-  - **A.3. Notifications Récentes de la Commission** : Liste des 3-5 dernières recevoir pour les membres de la commission ou cet utilisateur. <sup>1</sup>
-  - **A.4. Mes Tâches Spécifiques (si applicable)** : Si rôle particulier (Président, Rapporteur désigné, Rédacteur PV désigné). Ex: "PV à rédiger: X". <sup>1</sup>
-
-#### B. Onglet: Rapports à Évaluer <sup>1</sup>
-
-- **Objectif** : Interface principale pour consulter les rapports soumis à la commission, participer au vote, formaliser l'encadrement.
-- **Contenu et Fonctionnalités** :
-  - **B.1. Liste des Rapports Transmis à la Commission** :
-    - **Interface** : Tableau paginé des rapport_etudiant avec id_statut_rapport = 'RAP_CONF' ou 'RAP_EN_COMM'.
-    - **Colonnes** : id_rapport_etudiant, Nom & Prénom Étudiant, libelle_rapport_etudiant (titre), theme, date_soumission, date transmission commission. État du vote pour ce rapport.
-    - **Filtres** : Par année académique, statut de vote.
-    - _Logique SQL_ : SELECT r.\*, etu.nom, etu.prenom, srr.libelle_statut_rapport FROM rapport_etudiant r JOIN etudiant etu ON r.numero_carte_etudiant = etu.numero_carte_etudiant JOIN statut_rapport_ref srr ON r.id_statut_rapport = srr.id_statut_rapport JOIN inscrire i ON r.numero_carte_etudiant = i.numero_carte_etudiant WHERE r.id_statut_rapport IN ('RAP_CONF', 'RAP_EN_COMM') AND i.id_annee_academique = ORDER BY r.date_soumission ASC; <sup>1</sup>
-  - **B.2. Action par Ligne: "Consulter et Évaluer le Rapport"** : Mène à une interface détaillée (WORKFLOW_EVALUATION_RAPPORT). <sup>1</sup>
-- **Workflow: Évaluation d'un Rapport et Processus de Vote (WORKFLOW_EVALUATION_RAPPORT)** <sup>1</sup>
-  - **Accès** : Via action "Consulter et Évaluer le Rapport". id_rapport_etudiant en paramètre.
-  - **Interface Détaillée d'Évaluation** :
-    - **Section 1 : Informations du Rapport et de l'Étudiant** : Données de rapport_etudiant et etudiant. <sup>1</sup>
-    - **Section 2 : Consultation du Contenu du Rapport (TEXTUEL)** : Affichage contenu_textuel de chaque document_soumis (dernière version). Les membres lisent directement. <sup>1</sup>
-    - **Section 3 : Espace de Vote en Ligne** (si dématérialisé) :
-      - Affichage État du Vote Actuel : Qui a voté, leur vote (si visible), commentaires de vote (vote_commission.commentaire_vote), tour de vote actuel (vote_commission.tour_vote). <sup>1</sup>
-      - Interface de Vote pour Membre Connecté (s'il n'a pas voté pour ce tour) :
-        - Options Décision (Boutons Radio, issues de decision_vote_ref) : 'DV_APPROUVE', 'DV_REFUSE', 'DV_CORRECTIONS' (à ajouter à decision_vote_ref), 'DV_DISCUSSION'. <sup>1</sup>
-        - Champ commentaire_vote (TEXT, dans vote_commission) : Obligatoire si vote non 'DV_APPROUVE'. <sup>1</sup>
-        - Bouton "Soumettre mon Vote". <sup>1</sup>
-      - **Logique Soumission Vote** (appel à ServiceCommission.enregistrerVotePourRapport) :
-                1. INSERT INTO vote_commission (...) VALUES (...);.
-                2. Journalisation (enregistrer).
-                3. Vérification Consensus (ServiceCommission) : Si tous ont voté pour ce tour :
-
-Unanimité "Approuvé" : rapport_etudiant.id_statut_rapport -> 'RAP_ATTENTE_PV_VALID'. Enregistrement décision finale (rapport_etudiant.decision_finale_commission, recommandations_commission_prelim). Notification pour rédaction PV.
-
-Unanimité "Refusé" ou "Corrections" : Statut et décision similaires.
-
-Divergence/Demande Discussion : rapport_etudiant.id_statut_rapport -> 'RAP_COMM_DISCUSSION'. Notification membres. Concertation (Messagerie onglet E). Président peut initier nouveau tour_vote. Gestion max tours (paramètre ServiceConfigurationSysteme). Escalade si pas consensus. <sup>1</sup>
-
-- - - **Section 4 : Formalisation de l'Encadrement (Directeur de Mémoire et Encadreur Pédagogique)** :
-            - Interface : Affichage directeurs/encadreurs proposés. Listes déroulantes pour sélectionner/confirmer enseignants (filtrables par specialite, grade). Bouton "Valider l'Encadrement". <sup>1</sup>
-            - **Logique** (ServiceCommission.confirmerEncadrementRapport) : UPDATE rapport_etudiant SET directeur_memoire_confirme_par_commission =?, encadreur_pedagogique_confirme_par_commission =?. Met à jour/crée entrées affecter avec id_statut_jury approprié ('ROLEJURY_DIR_MEMOIRE', 'ROLEJURY_ENC_PEDAGO'). Journalisation. <sup>1</sup>
-      - **Section 5 : Planification de Session Présentielle (si habilité, ex: Président)** :
-        - Interface pour créer session_commission (date, heure, lieu, ordre du jour). Associer id_rapport_etudiant à id_session_commission (via pv_session_rapport ou rapport_session_commission). <sup>1</sup>
-
-#### C. Onglet: Gestion des Procès-Verbaux (PV) <sup>1</sup>
-
-- **Objectif** : Permettre la rédaction, soumission, consultation et validation des PV de la commission.
-- **Contenu et Fonctionnalités** :
-  - **C.1. Liste des PV (Brouillons, En Attente de Validation, Validés)** :
-    - **Interface** : Tableau (id_compte_rendu, type_pv, libelle_rapport_etudiant si individuel, id_session_commission si session, date_creation_pv, libelle_statut_pv, id_redacteur).
-    - **Filtres** : Par type_pv, id_statut_pv, id_annee_academique (via rapport), id_redacteur.
-    - **Actions** : "Rédiger/Modifier PV", "Soumettre pour Validation", "Valider ce PV", "Voir/Télécharger PDF". <sup>1</sup>
-  - **C.2. Workflow de Rédaction et Validation de PV** :
-    - **Étape 1 : Rédaction du PV (par Rédacteur désigné)** :
-      - Interface : Formulaire avec éditeur riche pour compte_rendu.libelle_compte_rendu. Champs pour lier à id_rapport_etudiant (si individuel) ou id_session_commission (si session).
-      - Logique (ServiceCommission.redigerOuMettreAJourPv) : INSERT ou UPDATE compte_rendu avec id_statut_pv = 'PV_BROUILLON'. Journalisation. <sup>1</sup>
-    - **Étape 2 : Soumission du PV pour Validation** :
-      - Action "Soumettre pour Validation" par le rédacteur.
-      - Logique (ServiceCommission.soumettrePvPourValidation) : UPDATE compte_rendu SET id_statut_pv = 'PV_SOUMIS_VALID'. Journalisation. Notification aux autres membres. <sup>1</sup>
-    - **Étape 3 : Validation du PV par les Membres de la Commission** :
-      - Interface : Consultation du PV. Options "Approuver le PV" (id_decision_validation_pv = 'DV_PV_APPROUVE') ou "Demander Modification" (id_decision_validation_pv = 'DV_PV_MODIF') avec champ commentaire_validation_pv obligatoire si modif.
-      - Logique (ServiceCommission.validerOuRejeterPv) : INSERT INTO validation_pv. Journalisation. Vérification consensus (configurable via ServiceConfigurationSysteme).
-        - Si validé : UPDATE compte_rendu SET id_statut_pv = 'PV_VALID'. Appel ServiceRapport.finaliserStatutApresPVValide (pour chaque rapport concerné). Appel ServiceDocumentGenerator.genererDocumentPDF pour PV. Notification étudiant et scolarité.
-        - Si modif demandée : UPDATE compte_rendu SET id_statut_pv = 'PV_MODIF_REQ'. Notification rédacteur. <sup>1</sup>
-
-#### D. Onglet: Gestion des Corrections (Post-Commission) <sup>1</sup>
-
-- **Objectif** : Suivre et statuer sur les corrections demandées aux étudiants par la commission.
-- **Interface et Fonctionnalités** :
-  - **D.1. Liste des Rapports en Attente de Corrections Validées** : Tableau des rapport_etudiant avec id_statut_rapport = 'RAP_CORRECT_SOUMISES_COMM'.
-  - **D.2. Interface d'Examen des Corrections** :
-    - Consultation de la version corrigée (document_soumis avec version > 1) et de la note explicative de l'étudiant.
-    - Rappel des recommandations initiales du PV.
-    - Options pour la commission : "Valider les Corrections", "Refuser les Corrections (Maintenir Décision Initiale)", "Demander Nouvelles Modifications". Champ commentaire. <sup>1</sup>
-  - **Logique** (ServiceCommission.statuerSurCorrectionsRapport) :
-    - Validation. Enregistrement décision.
-    - UPDATE rapport_etudiant.id_statut_rapport (vers 'RAP_VALID', 'RAP_REFUSE', ou retour à 'RAP_CORRECT').
-    - Journalisation. Si corrections validées, mise à jour/addendum PV via ServiceDocumentGenerator. Notification étudiant. <sup>1</sup>
-
-#### E. Onglet: Communication & Concertation <sup>1</sup>
-
-- **Objectif** : Faciliter les discussions et la délibération entre les membres de la commission, notamment pour les rapports nécessitant une concertation.
-- **Interface et Fonctionnalités** (gérées par ServiceMessagerie.php) :
-  - Similaire à D. Messagerie Interne du Module Personnel Administratif.
-  - Possibilité de groupes de discussion créés automatiquement ou manuellement pour chaque rapport en discussion (rapport_etudiant.id_statut_rapport = 'RAP_COMM_DISCUSSION'). <sup>1</sup>
-
-#### F. Onglet: Historique & Archives (Commission) <sup>1</sup>
-
-- **Objectif** : Fournir un accès consultatif aux archives des activités passées de la commission.
-- **Interface et Fonctionnalités** :
-  - **F.1. Consultation des Rapports Traités Antérieurement** : Tableau des rapport_etudiant avec statuts finaux ('RAP_VALID', 'RAP_REFUSE_ARCHIVE'). Accès aux PV associés.
-  - **F.2. Consultation des PV Archivés** : Liste des compte_rendu avec id_statut_pv = 'PV_VALID' ou 'PV_ARCHIVE_OFFICIEL'.
-  - **F.3. Historique des Votes et Décisions** (si pertinent et droits suffisants) : Consultation des vote_commission et validation_pv passés. <sup>1</sup>
-
-#### G. Onglet: Mon Profil (commun) <sup>1</sup>
-
-- **Objectif** : Permettre au membre de la commission de gérer ses propres informations de compte.
-- **Interface et Fonctionnalités** : Similaire à E. Mon Profil du Module Personnel Administratif, mais pour un enseignant lié à un utilisateur. Modification email_principal, mot de passe, photo_profil, préférences de notification. <sup>1</sup>
-
-## Partie V : Services Transversaux (Synthèse)
-
-### ServiceAuthentification.php <sup>1</sup>
-
-- **Rôle** : Gère connexion, déconnexion, gestion de session, création/activation de comptes (appelé par RS pour étudiants), réinitialisation MDP, validation email, gestion 2FA. <sup>1</sup>
-- **Méthodes Clés** : detruireSessionUtilisateur(), genererEtActiverCompteEtudiantPourRS(), modifierMotDePasseUtilisateur(). <sup>1</sup>
-- **Interactions** : Tables utilisateur, etudiant, personnel_administratif, enseignant, enregistrer, historique_mot_de_passe. Appelle ServiceEmail (via ServiceNotification). <sup>1</sup>
-
-### ServiceNotification.php et ServiceEmail.php <sup>1</sup>
-
-- **Rôle** : ServiceNotification orchestre toutes les communications (internes et emails), gère les templates (message), détermine les destinataires. ServiceEmail gère l'envoi technique des emails. <sup>1</sup>
-- **Déclenchement** : Par les services métier (ServiceConformite, ServiceAuthentification, ServiceRapport, ServiceCommission) et les tâches CRON. <sup>1</sup>
-- **Types de Notifications/Emails** : Bienvenue, validation compte/email, reset MDP, décisions de conformité/commission, soumission/resoumission rapport, alertes, rappels. <sup>1</sup>
-- **Gestion Templates** : Via table message (ID, sujet, corps avec placeholders, type). <sup>1</sup>
-- **Interactions** : ServiceEmail appelé par ServiceNotification. Tables recevoir, utilisateur, message, notification, enregistrer. <sup>1</sup>
-
-### ServiceDocumentGenerator.php <sup>1</sup>
-
-- **Rôle** : Génération centralisée et automatisée de documents PDF officiels (attestations, PV, relevés). <sup>1</sup>
-- **Principe** : Basé sur templates (HTML/CSS), peuplés avec données dynamiques, convertis en PDF via librairie (TCPDF, Dompdf). <sup>1</sup>
-- **Sources Données** : etudiant, inscrire, rapport_etudiant, compte_rendu, evaluer, etc. <sup>1</sup>
-- **Invocation** : Par Module Personnel Administratif (RS pour attestations), Module Commission (pour PV), Module Admin (pour gestion modèles). <sup>1</sup>
-
-### ServiceConfigurationSysteme.php <sup>1</sup>
-
-- **Rôle** : Centralise gestion et fourniture des paramètres système globaux (délais, règles validation, seuils alertes, paramètres vote, options chat). <sup>1</sup>
-- **Stockage Paramètres** : Fichiers de conf (ex: .env) ou table systeme_parametres (clé-valeur). <sup>1</sup>
-- **Consommation** : Autres services/modules appellent des méthodes de ce service pour récupérer les configurations. Cache interne recommandé. <sup>1</sup>
-
-### Autres Services (implicites ou mentionnés)
-
-- **ServiceRapport.php** : Gère cycle de vie des rapports (soumission, corrections). <sup>1</sup>
-- **ServiceConformite.php** : Gère processus de vérification de conformité. <sup>1</sup>
-- **ServiceCommission.php** : Gère processus d'évaluation par la commission (vote, PV). <sup>1</sup>
-- **ServiceGestionAcademique.php** : Gère données académiques (inscriptions, stages, notes). <sup>1</sup>
-- **ServiceReclamation.php** : Gère réclamations étudiants. <sup>1</sup>
-- **ServiceMessagerie.php** : Gère messagerie interne. <sup>1</sup>
-- **PermissionService (conceptuel)** : Vérifie droits utilisateurs. <sup>1</sup>
-- **AuditService (conceptuel)** : Centralise enregistrement logs dans enregistrer. <sup>1</sup>
-
-## Conclusion Architecturale <sup>1</sup>
-
-Le système "GestionMySoutenance" est fondé sur des principes architecturaux robustes :
-
-- **Architecture MVC** : Clairement implémentée via la structure des répertoires (Controller, Model, Views) et la séparation des responsabilités. Les Contrôleurs gèrent les requêtes, les Modèles la logique métier et l'accès aux données, les Vues la présentation. <sup>1</sup>
-- **Gestion Textuelle des Rapports** : Les étudiants saisissent le contenu de leur rapport directement dans des éditeurs de texte intégrés ; aucun fichier n'est téléversé pour le corps du rapport. Le contenu est stocké dans document_soumis.contenu_textuel. <sup>1</sup>
-- **Génération Centralisée de PDF** : ServiceDocumentGenerator.php utilise des templates pour produire tous les documents PDF officiels, assurant cohérence et professionnalisme. <sup>1</sup>
-- **Sécurité RBAC (Role-Based Access Control)** : Implémentée via type_utilisateur, groupe_utilisateur, traitement (fonctionnalités granulaires), et rattacher (liaison groupe-traitement). Un PermissionService centralise la vérification des droits. <sup>1</sup>
-- **Audit Détaillé** : La table enregistrer, alimentée par un AuditService, logue toutes les actions significatives avec utilisateur, date, type d'action, entité concernée et détails JSON, assurant une traçabilité complète. <sup>1</sup>
-- **Architecture Modulaire** : Le système est divisé en modules fonctionnels (Étudiant, Personnel Administratif, Commission, Administration), chacun avec ses propres contrôleurs, vues, et potentiellement services, facilitant le développement et la maintenance. <sup>1</sup>
-- **Services Centralisés pour Logique Transversale** : Des services dédiés (Authentification, Notification, Email, Génération Document, Configuration Système, etc.) encapsulent la logique métier complexe ou partagée, favorisant la réutilisabilité et la cohérence. <sup>1</sup>
-
-Ces principes concourent à un système structuré, sécurisé, maintenable et apte à gérer la complexité du processus de soutenance.
+Le processus d'évaluation par la commission est initié lorsqu'un ou plusieurs rapports, préalablement validés sur le plan de la conformité, lui sont transmis. Le président de la commission, ou un membre ayant reçu délégation, peut alors organiser une session d'évaluation. Ces sessions sont flexibles et peuvent être conduites de deux manières principales pour s'adapter aux contraintes organisationnelles de l'établissement. Une session peut se tenir en présentiel, où tous les membres se réunissent ; dans ce cas, la plateforme
+
+"GestionMySoutenance" sert de support centralisé pour la consultation des rapports et des documents associés, facilitant les discussions et la prise de décision collective.
+
+Alternativement, si une réunion physique n'est pas possible ou si une approche asynchrone est préférée, la session peut se dérouler entièrement en ligne. La plateforme intègre pour cela un système de vote électronique qui permet à chaque membre de la commission d'examiner individuellement les rapports à son rythme, puis d'enregistrer formellement son avis et ses commentaires.
+
+Au sein d'une session d'évaluation, qu'elle soit conduite en présentiel ou à distance, chaque membre de la commission dispose d'un accès complet et détaillé au contenu textuel intégral de chaque rapport soumis par l'étudiant. Cela comprend toutes les sections rédigées, telles que l'introduction, le développement méthodologique, l'analyse des résultats, la conclusion et la bibliographie. Les informations contextuelles relatives à l'étudiant et à son parcours académique sont également accessibles pour éclairer l'évaluation. Après une analyse approfondie du travail, le membre de la commission est invité à formaliser son évaluation. Il exprime sa décision en choisissant parmi un ensemble d'options prédéfinies par l'administration, par exemple : "Approuvé en l'état", "Refusé", "Approuvé sous réserve de corrections mineures" ou "Nécessite une discussion collégiale approfondie". Il est impératif que chaque décision, particulièrement celles qui ne constituent pas une approbation simple, soit accompagnée d'un commentaire circonstancié. Ce commentaire doit fournir une justification claire de l'avis émis et, le cas échéant, des recommandations précises à l'attention de l'étudiant ou des autres membres. Le système est conçu pour gérer des processus de délibération pouvant inclure plusieurs tours de vote si un consensus immédiat n'est pas atteint. Le président de la commission dispose d'outils de suivi pour visualiser l'avancement des évaluations individuelles, identifier les éventuels points de divergence et, si le processus le requiert, relancer un tour de vote ou convoquer une discussion spécifique pour faciliter la prise de décision collective. En parallèle de l'évaluation du contenu du rapport, la commission a également la responsabilité de formaliser ou de confirmer l'encadrement du travail, en désignant officiellement le directeur de mémoire parmi les enseignants de l'établissement, en tenant compte de sa spécialité et de sa charge de travail.
+
+Lorsqu'une décision finale est collégialement arrêtée par la commission pour un rapport – qu'il s'agisse d'une validation pure et simple, d'une validation conditionnée à des ajustements mineurs ne nécessitant pas une réévaluation complète, d'une demande de corrections substantielles impliquant une nouvelle soumission, ou d'un refus définitif – cette décision est officiellement consignée dans le système. L'étape consécutive et essentielle est la production
+
+du **Procès-Verbal de Validation** du rapport. La rédaction de ce document officiel incombe généralement à un membre spécifiquement désigné, qui peut être le rapporteur du travail évalué ou le président de la session. La plateforme propose une interface d'édition de texte pour la composition du procès-verbal. Ce document doit fidèlement retranscrire la décision finale de la commission, les principaux arguments et observations ayant conduit à cette décision, la note attribuée \(si applicable selon les procédures de l'établissement\), et toute recommandation ou réserve formulée. Une fois le projet de procès-verbal rédigé, il est soumis à un circuit de validation interne à la commission. Les autres membres peuvent le consulter, suggérer des amendements, et doivent formellement l'approuver. Ce n'est qu'après cette approbation collégiale que le Procès-Verbal de Validation est considéré comme définitif et acté. Dès sa finalisation, le système assure sa transmission automatique : il est immédiatement mis à la disposition de l'étudiant concerné dans son espace personnel et communiqué au service administratif en charge de la conformité pour archivage et suivi. En complément, une copie du PV peut être adressée par courrier électronique à d'autres parties prenantes définies par les processus de l'établissement, comme le service des stages ou l'enseignant directeur de mémoire.
+
+Le module Commission de Validation archive l'ensemble des rapports traités, les décisions prises, les commentaires d'évaluation et les procès-verbaux de validation générés. Cet historique constitue une ressource précieuse pour l'établissement, permettant d'assurer la continuité pédagogique, de répondre à d'éventuelles contestations et d'analyser les tendances en matière d'évaluation. Pour faciliter la coordination interne et les discussions spécifiques à certains dossiers, une messagerie sécurisée est intégrée, permettant aux membres d'échanger de manière confidentielle.
+
+
+
+**Partie II : Module Étudiant**
+
+L'Espace Étudiant de "GestionMySoutenance" a été conçu avec un soin particulier porté à l'ergonomie et à la convivialité, afin d'offrir à l'étudiant une expérience utilisateur claire, simple et rassurante tout au long du processus de préparation et de validation de son rapport de stage, celui-ci étant soumis en vue de la validation de son thème de soutenance. Dès sa première authentification, l'étudiant est accueilli dans un environnement personnalisé. Cette interface d'accueil présente de manière synthétique et accessible les informations cruciales : l'état d'avancement actuel de son rapport, les notifications importantes émanant des services administratifs ou de la commission de validation, ainsi que toute action qui pourrait être attendue de sa part. Il est essentiel de noter que l'accès de l'étudiant à cet espace et à ses fonctionnalités est rigoureusement conditionné par la validation préalable de son inscription administrative par le Responsable Scolarité, ainsi que par l'enregistrement et la validation de son stage par ce même service, et par la régularisation d'éventuelles pénalités en cas de dépassement des délais impartis pour la soutenance.
+
+La fonctionnalité centrale et la plus significative de cet espace est la préparation et la soumission de son rapport de stage. "GestionMySoutenance" innove en proposant une gestion entièrement textuelle du contenu principal du rapport. Pour la rédaction de son travail, l'étudiant dispose de deux options flexibles, lui permettant de choisir l'approche qui correspond le mieux à ses habitudes et aux exigences spécifiques. D'une part, la plateforme met à sa disposition une bibliothèque de **modèles de rapport pré-formatés**. Ces modèles, conçus pour être intuitifs et comparables aux gabarits offerts par les logiciels de traitement de texte courants, fournissent une structure prédéfinie avec les sections académiques attendues \(telles que le résumé, l'introduction, les différentes parties du développement, la conclusion, la bibliographie\).
+
+L'étudiant peut sélectionner un modèle et l'utiliser comme base, en personnalisant et en complétant chaque section avec son propre contenu. D'autre part, s'il désire une plus grande liberté ou si aucun modèle ne correspond parfaitement à son projet, l'étudiant a la possibilité de créer son rapport intégralement **à partir d'une page blanche**. Dans les deux cas, il bénéficie des outils d'édition de texte enrichi \(WYSIWYG\) intégrés à la plateforme. Ces outils lui permettent de mettre en forme son texte \(gras, italique, listes, titres hiérarchisés, etc.\), de structurer ses idées, et de veiller à la clarté de sa présentation, directement en ligne et section par section, tout en respectant les directives de mise en page de l'établissement. Tout le contenu ainsi produit est sauvegardé de manière exclusivement textuelle au sein du système.
+
+Au cours de la phase de rédaction, l'étudiant a la latitude de sauvegarder ses travaux en tant que brouillons, lui permettant de progresser par étapes et de revenir sur son contenu autant de fois que nécessaire avant la soumission définitive. Outre le contenu textuel, il doit également fournir certaines métadonnées essentielles relatives à son rapport, notamment un titre précis, le thème principal de son étude, et une estimation du nombre de pages. Lorsqu'il considère que son rapport est complet et finalisé, il procède à sa soumission formelle via une action dédiée sur la plateforme. Cette action est significative : une fois le rapport soumis, l'étudiant **ne pourra** **plus initier la soumission d'un autre rapport pour le même stage ou la même période** **académique**, à moins qu'une procédure de reprise spécifique ne soit explicitement autorisée et activée par l'administration suite à une décision de la commission. La soumission déclenche immédiatement une notification à l'étudiant, accusant réception de son travail et l'informant qu'il est désormais transmis au service administratif pour la vérification de conformité.
+
+Après cette soumission, l'Espace Étudiant lui permet de suivre pas à pas l'évolution du statut de son dossier. Il est informé si des éléments de son rapport \(contenu ou métadonnées\) sont jugés non conformes aux exigences administratives ou réglementaires. Dans un tel cas, le rapport lui est retourné électroniquement, accompagné des commentaires précis et détaillés du service de conformité indiquant les points à corriger. L'étudiant accède alors à nouveau à l'interface d'édition de son rapport pour y apporter les modifications requises. Afin de faciliter la tâche du service de conformité lors de la nouvelle vérification, il est invité à rédiger une courte note explicative résumant les corrections qu'il a effectuées. Une fois ces ajustements réalisés, il resoumet son travail.
+
+Lorsque le rapport a passé l'étape de conformité, il est transmis à la commission de validation, et l'étudiant en est notifié. La décision finale de la commission, ainsi que le Procès-Verbal de Validation du rapport qui en découle, lui sont communiqués par la suite. Si ce procès-verbal confirme la validation de son rapport, cette étape marque l'achèvement réussi du processus pour ce travail. En conséquence, l'option de soumettre un rapport pour ce stage ou ce thème sera **définitivement désactivée**, signifiant la clôture du cycle.
+
+Dans l'éventualité où la commission de validation émettrait un **avis de non-validation** pour le rapport soumis, l'étudiant en est clairement informé, avec les motifs détaillés de cette décision.
+
+Selon les règlements de l'établissement et la nature des lacunes identifiées, deux issues principales peuvent se présenter. Premièrement, si la commission autorise l'étudiant à **reprendre son rapport actuel** en effectuant des corrections substantielles sur le même thème et en lien avec le même stage, une option spécifique s'activera dans son espace, lui permettant d'accéder de nouveau à l'édition de son travail pour le modifier en profondeur avant de le resoumettre à un nouveau cycle complet d'évaluation \(conformité puis commission\).
+
+Deuxièmement, si la décision de non-validation est définitive pour le travail présenté, ou si l'étudiant opte pour cette voie après consultation avec ses responsables pédagogiques, il devra envisager d' **effectuer un autre stage pour pouvoir proposer un nouveau thème** de rapport. Dans
+
+cette situation, la fonctionnalité de soumission de rapport dans son espace sera **momentanément suspendue**. Il devra alors suivre la procédure administrative pour l'enregistrement et la validation d'un nouveau stage auprès du Responsable Scolarité. Ce n'est qu'après la confirmation administrative de ce nouveau stage par le RS que son accès à la soumission d'un nouveau rapport sur la plateforme "GestionMySoutenance" sera réactivé.
+
+En complément de ces fonctionnalités directement liées au rapport, l'Espace Étudiant offre un accès permanent à la gestion de son profil personnel. Il peut y consulter les informations administratives le concernant et mettre à jour ses coordonnées personnelles, telles que son numéro de téléphone et son adresse électronique secondaire. La sécurité de son compte est également sous son contrôle : il peut modifier son mot de passe et est encouragé à activer l'authentification à deux facteurs \(2FA\) pour une protection accrue de son accès. Il a aussi la possibilité d'ajouter une photo à son profil.
+
+Pour toute question, problème technique, ou nécessité de clarification administrative qui ne trouverait pas de réponse dans les ressources mises à disposition, l'étudiant dispose d'un système de réclamations structuré. Il peut soumettre une requête, en la catégorisant \(par exemple, problème d'accès, question sur le statut de son rapport, demande de clarification sur une procédure\), et en fournissant une description détaillée de sa situation. Il peut ensuite suivre l'évolution du traitement de sa réclamation et consulter les réponses qui lui sont apportées par les services compétents. C'est notamment via ce canal qu'il pourrait initier une demande de reprise de processus impliquant un nouveau stage, en fournissant les informations textuelles préliminaires, avant une validation formelle par le RS.
+
+Enfin, une section "Ressources & Aide" est constamment accessible, regroupant une documentation utile : guides méthodologiques pour la rédaction, exemples de structure de rapport, critères d'évaluation appliqués par la commission, une foire aux questions \(FAQ\) répondant aux interrogations les plus fréquentes, ainsi que les coordonnées des différents services de l'établissement susceptibles de l'accompagner \(support technique, scolarité, conseillers pédagogiques\).
+
+La plateforme assure une traçabilité rigoureuse de toutes les actions entreprises par l'étudiant, et lui envoie des notifications régulières par courrier électronique ainsi que directement dans son espace pour le tenir informé des étapes importantes de son parcours et des éventuelles actions requises de sa part, garantissant ainsi une communication fluide et proactive.
+
+
+
+**Partie III : Module Personnel Administratif**
+
+Le Module Personnel Administratif de "GestionMySoutenance" est l'interface opérationnelle destinée aux agents de l'administration de l'établissement. Il est principalement utilisé par deux profils distincts aux responsabilités bien définies : l'Agent de Contrôle de Conformité et le Responsable Scolarité \(RS\). Les fonctionnalités accessibles à chacun sont déterminées par les droits spécifiques associés à leur rôle, garantissant une séparation des tâches et une sécurité des accès. Ils partagent néanmoins des outils communs, tels que la messagerie interne pour la communication et un espace personnel pour la gestion de leur propre compte utilisateur.
+
+L'Agent de Contrôle de Conformité a pour mission principale la vérification administrative et réglementaire des rapports de stage soumis par les étudiants. Son interface de travail est optimisée pour cette tâche : un tableau de bord lui signale les rapports en attente de son examen, souvent classés par ordre de soumission. Lorsqu'il sélectionne un rapport, une vue détaillée s'affiche, présentant les métadonnées saisies par l'étudiant \(titre, thème\), les informations d'identification et d'inscription de ce dernier, et surtout, l'accès direct au contenu textuel intégral de chaque section du rapport. L'examen se fait exclusivement en ligne. L'agent
+
+s'appuie sur une grille de critères de conformité, établie par l'établissement, pour vérifier la complétude du dossier, le respect des consignes de présentation de base, et la validité administrative des prérequis de l'étudiant \(telles que la scolarité à jour et le stage effectivement enregistré et validé, informations qui lui sont présentées pour vérification\). À l'issue de son analyse, il statue sur la conformité du rapport. Si le rapport est jugé "Conforme", il est automatiquement transmis à la commission de validation pour évaluation académique. Si des manquements sont constatés, il qualifie le rapport de "Non Conforme" et doit impérativement rédiger un commentaire précis et constructif, détaillant chaque point de non-conformité et les corrections attendues. Ce retour est communiqué à l'étudiant pour qu'il puisse amender son travail. L'Agent de Conformité dispose également d'un historique des vérifications qu'il a effectuées.
+
+Le Responsable Scolarité \(RS\) assume un rôle pivot dans l'administration du parcours étudiant lié à la soutenance, avec un champ d'action plus étendu. Son interface personnalisée met en exergue les tâches prioritaires, comme la liste des étudiants dont le dossier administratif et de stage est complet et qui sont donc éligibles à l'activation de leur accès à la plateforme \(y compris ceux ayant régularisé d'éventuelles pénalités de retard\), les inscriptions ou paiements récents, les nouveaux enregistrements de stage, ou encore les réclamations étudiantes qui nécessitent son intervention.
+
+Une responsabilité fondamentale du RS est la gestion des accès étudiants à
+
+"GestionMySoutenance". C'est lui qui, après vérification métier, active l'accès fonctionnel pour un étudiant lui permettant de soumettre son rapport. Cette activation est conditionnée par la validation de prérequis indispensables : une situation de scolarité en règle pour l'année académique concernée \(frais d'inscription acquittés et enregistrés\) et la confirmation de la réalisation et de la validité d'un stage en lien avec son cursus. Le RS est également celui qui gère la régularisation des pénalités pour les étudiants en dépassement de délai ; l'accès à la soumission de rapport pour ces derniers n'est réactivé qu'après confirmation par le RS que les pénalités ont été soldées. C'est le RS qui vérifie ces éléments et procède à l'enregistrement formel du stage dans le système, s'appuyant sur les justificatifs fournis par l'étudiant \(par exemple, la convention de stage signée\). Une fois ces conditions remplies \(incluant les pénalités le cas échéant\), le RS déclenche l'activation, et l'étudiant reçoit ses identifiants.
+
+L' **Administrateur Système**, en parallèle, possède la capacité technique de créer n'importe quel compte utilisateur pour des besoins techniques ou d'initialisation, mais le flux opérationnel d'activation d'un compte étudiant pour la soumission d'un rapport passe par le RS.
+
+Le RS assure également la gestion des inscriptions administratives et pédagogiques des étudiants. Il peut enregistrer les inscriptions annuelles, y associer le niveau d'étude, le montant des frais dus, et surtout, il actualise le statut de paiement, ce qui est crucial pour l'activation du compte. En fin de cycle, il enregistre les décisions de passage.
+
+La **saisie et la gestion des notes** des étudiants relèvent également de la compétence exclusive du RS au sein de cette plateforme. Dans ce système, les **enseignants** interviennent principalement en tant que **directeurs de mémoire** \(un rôle d'encadrement scientifique du travail de l'étudiant\) ou comme membres de la commission de validation ; ils ne sont pas prévus pour saisir directement les notes des unités d'enseignement des étudiants via cette application.
+
+Le RS dispose donc d'un espace dédié pour enregistrer, matière par matière ou module par module, les résultats obtenus par chaque étudiant, en s'assurant de leur exactitude par rapport aux procès-verbaux d'examen ou autres relevés officiels. Après la consolidation et la validation de l'ensemble des notes pour une période académique donnée \(semestre, année\), le RS est en mesure de **générer les bulletins de notes individuels**. Ces documents officiels sont produits au
+
+format PDF par le système et sont ensuite mis à la disposition de chaque étudiant concerné dans son espace personnel sécurisé.
+
+Le RS joue un rôle déterminant dans le traitement des cas de non-validation de rapport par la commission. Si un étudiant, suite à un refus, doit effectuer un nouveau stage pour proposer un nouveau thème, c'est le RS qui le guide, valide les informations de ce nouveau stage, et procède à la réactivation de son accès à la plateforme pour la soumission de ce nouveau travail, une fois la suspension momentanée de son compte levée après cette validation.
+
+Il est aussi le principal interlocuteur pour le traitement des réclamations étudiantes liées aux aspects administratifs : problèmes d'inscription, questions sur le statut de la scolarité, du stage ou des pénalités, difficultés d'accès à la plateforme en raison de prérequis non encore validés.
+
+Il analyse ces demandes, apporte des réponses, et enregistre les actions entreprises.
+
+En outre, le RS est habilité à générer divers documents administratifs au format PDF pour les étudiants, tels que les attestations de scolarité ou les reçus de paiement, directement depuis la plateforme, garantissant ainsi l'uniformité et l'authenticité de ces documents. Enfin, comme tous les utilisateurs, il gère son propre profil et peut utiliser la messagerie interne pour ses communications.
+
+
+
+**Partie IV : Module Administration**
+
+Le Module Administration est le poste de commande central de "GestionMySoutenance", accessible uniquement à l'Administrateur Système, qui détient les droits les plus étendus sur la plateforme. Ce module est fondamental pour la configuration initiale, la personnalisation continue, la supervision globale, la maintenance technique et la garantie de la sécurité de l'ensemble du système d'information.
+
+Dès sa connexion, l'Administrateur accède à un tableau de bord consolidé qui lui fournit une vision panoramique de l'état opérationnel et de l'activité de l'application. Il y visualise des indicateurs clés tels que le nombre total d'utilisateurs actifs et leur répartition par profil, la volumétrie des données \(notamment le nombre de rapports soumis et leur statut pour l'année académique en cours\), ainsi que des alertes potentielles concernant l'état de la base de données, la performance du serveur \(si des outils de monitoring sont intégrés\), le bon fonctionnement des processus automatisés \(tâches CRON\), ou la présence d'années académiques qui auraient dû être clôturées. Des liens directs vers les sections de gestion les plus fréquemment utilisées sont également proposés pour une navigation efficace.
+
+La gestion des comptes utilisateurs est une prérogative centrale de l'Administrateur. Il possède une vue exhaustive de tous les utilisateurs enregistrés \(étudiants, membres du personnel, enseignants, autres administrateurs\). Il peut effectuer des recherches multicritères, consulter en détail le profil et les paramètres de compte de chaque utilisateur, et intervenir à tous les niveaux : modification de n'importe quelle information de profil \(y compris celles verrouillées pour l'utilisateur final, comme un nom officiel ou un matricule, sous réserve de procédures de vérification internes à l'établissement\), gestion des statuts de compte \(activation, désactivation, blocage pour des raisons de sécurité, archivage en fin de parcours\), réinitialisation de mots de passe en cas de difficulté majeure rencontrée par un utilisateur, et affectation des utilisateurs aux groupes et types définis, ce qui conditionne leurs permissions. C'est notamment l'Administrateur qui est chargé de la création initiale des comptes pour les membres du personnel administratif et les enseignants, en leur attribuant les rôles et les droits d'accès adéquats. Il dispose également de fonctionnalités d'importation en masse pour créer des comptes étudiants en début d'année académique, à partir de fichiers structurés. Bien que le Responsable Scolarité ait la charge de l'activation fonctionnelle des comptes étudiants une fois
+
+les prérequis métier remplis, l'Administrateur conserve la capacité technique de créer ou modifier n'importe quel compte en cas de nécessité. La suppression physique d'un compte est une opération rare, exécutée avec une extrême prudence, uniquement en cas d'erreur de création flagrante sans aucune donnée transactionnelle associée, ou pour se conformer à des obligations légales strictes de suppression de données, et toujours après une analyse d'impact rigoureuse.
+
+La configuration fine du Contrôle d'Accès Basé sur les Rôles \(RBAC\) est entièrement maîtrisée par l'Administrateur. Il définit la nomenclature des types d'utilisateurs \(les grandes catégories\), des groupes d'utilisateurs \(qui matérialisent les rôles fonctionnels spécifiques tels qu'Agent de Conformité ou Membre de Commission\), et des niveaux d'accès différenciés aux données.
+
+Surtout, il administre le catalogue des "traitements", qui sont les actions ou fonctionnalités atomiques protégées au sein du système. C'est lui qui établit les liens entre ces traitements et les groupes d'utilisateurs, déterminant ainsi avec précision les permissions de chaque rôle.
+
+L'ensemble des référentiels et des paramètres qui structurent le fonctionnement de
+
+"GestionMySoutenance" est également géré via ce module. L'Administrateur crée et gère les années académiques, en définissant leurs dates et en spécifiant celle qui est active. Il administre toutes les listes de valeurs standardisées : niveaux d'étude, spécialités de formation, grades et fonctions des enseignants \(y compris l'historisation de leurs changements de statut ou de poste\), types de documents \(notamment les différentes sections textuelles attendues pour un rapport\), ainsi que les divers statuts qui jalonnent les workflows. Il configure les paramètres relatifs aux pénalités de retard de soutenance, incluant les seuils et les montants ou types de pénalités. Pour chacun de ces référentiels, il dispose d'interfaces permettant de créer, lire, mettre à jour et supprimer des entrées \(CRUD\), en veillant toujours à l'intégrité référentielle.
+
+Les règles métier et les paramètres de comportement de l'application sont également personnalisables par l'Administrateur. Il configure les échéances critiques \(comme la date butoir pour la soumission des rapports\), les durées de validité des jetons de sécurité, les critères de validation spécifiques, les seuils pour le déclenchement d'alertes automatiques, et les options détaillées des processus internes.
+
+La personnalisation des communications sortantes est aussi de son ressort. Il gère les modèles de documents PDF \(attestations, procès-verbaux\) et les modèles pour les notifications, en définissant leur contenu \(y compris l'utilisation de variables pour la personnalisation\), et le contexte de leur utilisation, y compris les notifications automatiques de changement de statut du personnel.
+
+La supervision technique et la maintenance de la plateforme sont des aspects critiques gérés par l'Administrateur. Il a un accès privilégié aux journaux d'audit et aux pistes d'accès pour surveiller l'activité du système et investiguer en cas d'incident. Il peut consulter les journaux d'erreurs. Des outils pour la maintenance de la base de données peuvent lui être proposés. Il est responsable de la stratégie de sauvegarde et, en cas de nécessité absolue, de restauration de la base de données. Enfin, il peut être impliqué dans le processus de déploiement des nouvelles versions ou des correctifs de l'application.
+
+L'Administrateur Système peut, de plus, bénéficier d'outils de reporting avancés et de tableaux de bord analytiques spécifiques à son rôle, lui permettant d'extraire des données consolidées sur l'utilisation générale de la plateforme, la performance des différents processus, ou d'autres indicateurs pertinents pour le pilotage stratégique et l'amélioration continue du système
+
+"GestionMySoutenance".
+
+
+
+
+
+**Section 1 : Conception du Système de Génération d'Identifiants Uniques** **3.1. Contexte et Problématique **
+
+Dans le cadre du développement de la plateforme "GestionMySoutenance", un besoin fondamental a été identifié pour la gestion des clés primaires de l'ensemble des entités métier \(étudiants, rapports, procès-verbaux, etc.\). Les approches standards, telles que l'auto-incrémentation numérique par la base de données ou l'utilisation d'identifiants opaques de type UUID, ont été écartées.
+
+Le choix s'est porté sur une solution plus évoluée répondant à une double problématique : 1. **Garantir l'unicité** technique et la pérennité des identifiants à travers le système.
+
+2. **Apporter une signification métier** à ces identifiants afin de les rendre lisibles, compréhensibles et facilement exploitables par les différents utilisateurs humains \(étudiants, personnel administratif, auditeurs\).
+
+L'objectif est donc de concevoir un système capable de générer des identifiants uniques, significatifs et basés sur une convention de nommage maîtrisée par l'application.
+
+**3.2. Principes et Convention de Nommage Adoptée **
+
+Il a été décidé d'adopter une convention de nommage structurée, dont le format est le suivant : PREFIXE-ANNEE-SEQUENCE.
+
+• **PRÉFIXE** : Un code de trois lettres majuscules identifiant sans ambiguïté la nature de l'entité.
+
+o RAP : pour un Rapport de soutenance.
+
+o ETU : pour un dossier Étudiant.
+
+o ENS : pour un dossier Enseignant.
+
+o PV\_ : pour un Procès-Verbal.
+
+o DOC : pour un Document Généré.
+
+• **ANNÉE** : L'année académique en cours \(sur quatre chiffres, ex: 2025\), qui fournit un contexte temporel immédiat.
+
+• **SÉQUENCE** : Un numéro séquentiel sur quatre chiffres \(complété par des zéros à gauche, ex: 0001, 0015, 0128\), garantissant l'unicité de l'identifiant pour une année et un type d'entité donnés.
+
+Cette convention permet la création d'identifiants à la fois uniques et riches en information, comme RAP-2025-0015.
+
+## **3.3. Solution Technique et Implémentation **
+
+Pour mettre en œuvre cette convention tout en assurant une robustesse à toute épreuve \(notamment face aux accès concurrents\), une solution en deux parties a été retenue.
+
+**3.3.1. Couche Persistance : La Table sequences **
+
+Le cœur de la solution réside dans une table de base de données dédiée, nommée sequences, dont le rôle exclusif est de maintenir la dernière valeur de chaque compteur. Sa structure a été pensée pour gérer des séquences annuelles :
+
+• nom\_sequence \(clé primaire, varchar\) : Le nom logique du compteur \(ex: 'rapport',
+
+'etudiant'\).
+
+• annee \(clé primaire, year\) : L'année concernée par le compteur.
+
+• valeur\_actuelle \(int\) : Le dernier numéro utilisé pour cette séquence pour cette année.
+
+La clé primaire composite \(nom\_sequence, annee\) assure qu'un compteur est unique pour une année donnée, permettant ainsi sa remise à zéro automatique au début de chaque nouvelle année.
+
+**3.3.2. Couche Applicative : Le Service IdentifiantGenerator** Toute la logique de génération est centralisée dans une classe PHP utilitaire : IdentifiantGenerator. Ce service est responsable de :
+
+1. **Démarrer une transaction** de base de données pour assurer l'intégrité de l'opération.
+
+2. **Verrouiller la ligne** de la séquence concernée pour l'année en cours \(SELECT ... FOR
+
+UPDATE\). Cette opération est cruciale pour empêcher que deux processus ne lisent et n'incrémentent le même compteur simultanément, ce qui prévient la création de doublons.
+
+3. **Créer la séquence** pour une nouvelle année si elle n'existe pas encore \(cas du premier identifiant de l'année\).
+
+4. **Incrémenter la valeur** du compteur.
+
+5. **Mettre à jour** la nouvelle valeur en base de données.
+
+6. **Valider la transaction** et retourner l'identifiant final, formaté selon la convention.
+
+## **3.4. Bénéfices et Avantages Stratégiques **
+
+Cette approche, bien que plus complexe à l'initialisation, offre des avantages considérables à long terme :
+
+• **Lisibilité et Ergonomie :** Les identifiants deviennent un langage commun, clair et facile à manipuler pour tous les utilisateurs, réduisant les erreurs de saisie et de communication.
+
+• **Professionnalisme :** Les références affichées à l'écran et sur les documents PDF
+
+générés \(procès-verbaux, attestations\) sont propres, structurées et renforcent l'image de marque de l'institution.
+
+• **Traçabilité et Audit :** Le suivi des actions et la consultation des journaux d'audit sont grandement simplifiés, chaque identifiant portant en lui-même le contexte de l'entité qu'il désigne.
+
+• **Maintenabilité et Évolutivité :** En centralisant la logique dans un seul service, toute future modification de la convention de nommage ne nécessitera d'intervenir qu'en un seul point du code, garantissant une maintenance aisée et une forte évolutivité de l'application.
+
+
+
+Absolument. Voici une synthèse complète et structurée, au format rapport, qui explique la logique de votre système de permissions, en concluant sur la solution de mise à jour en temps réel que vous avez proposée.
+
+
+
+**Section 2 : Conception et Implémentation du Système de Contrôle d'Accès Basé sur les Rôles** **\(RBAC\) **
+
+## **4.1 Introduction et Objectifs **
+
+La plateforme "GestionMySoutenance" est un système multi-acteurs où les étudiants, le personnel administratif, les membres de commissions et les administrateurs interagissent avec des données sensibles et des fonctionnalités critiques. Il est donc impératif de mettre en place un système de gestion des droits à la fois robuste, sécurisé et suffisamment flexible pour s'adapter aux évolutions des responsabilités au sein de l'établissement.
+
+L'objectif de ce chapitre est de documenter l'architecture du système de Contrôle d'Accès Basé sur les Rôles \(RBAC\) retenu pour le projet, depuis sa modélisation en base de données jusqu'à
+
+son implémentation applicative en PHP, en justifiant les choix de conception qui garantissent sa performance et sa sécurité.
+
+**4.2 Architecture de la Base de Données **
+
+Le modèle RBAC repose sur la collaboration de quatre tables principales qui permettent de dissocier les utilisateurs de leurs permissions, en utilisant le "rôle" \(ou groupe\) comme pivot.
+
+• **type\_utilisateur :** Assure une catégorisation générale des entités \(Étudiant, Enseignant, etc.\) pour déterminer la structure des données métier associées à un compte.
+
+• **groupe\_utilisateur :** Définit les rôles fonctionnels au sein de l'application \(ex: GRP\_COMMISSION, GRP\_AGENT\_CONFORMITE\). C'est à ce groupe que les droits sont attribués. Chaque utilisateur appartient à un seul groupe, qui matérialise son niveau de responsabilité.
+
+• **traitement :** Constitue le catalogue exhaustif de toutes les actions atomiques et protégées
+
+du
+
+système
+
+\(ex:
+
+TRAIT\_RAPPORT\_SOUMETTRE,
+
+TRAIT\_COMMISSION\_VOTER\). Cette granularité permet un contrôle extrêmement fin des permissions.
+
+• **rattacher :** Sert de matrice de permissions en liant les groupes aux traitements. Une entrée dans cette table signifie qu'un rôle donné est autorisé à effectuer une action spécifique.
+
+**4.3 Implémentation Applicative et Gestion en Session **
+
+L'implémentation en PHP a été conçue pour être performante et centralisée. La logique est principalement gérée par un service dédié, ServicePermissions, responsable de vérifier les droits de l'utilisateur connecté.
+
+Le fonctionnement initial repose sur une mise en cache des permissions en session : 1. Lors de la connexion réussie d'un utilisateur, l'application identifie son groupe.
+
+2. Le ServicePermissions interroge la base de données une seule fois pour lister tous les traitements autorisés pour ce groupe.
+
+3. Cette liste de permissions est stockée dans la variable de session $\_SESSION\['user\_permissions'\].
+
+4. Pour chaque action ultérieure, l'application vérifie la permission requise directement dans ce tableau en session, évitant ainsi des requêtes répétées à la base de données.
+
+**4.4 Problématique Avancée : La Synchronisation des Droits en Temps Réel** L'approche de mise en cache en session, bien que performante, présente une faiblesse identifiée lors de la phase de conception : si les droits d'un groupe sont modifiés par un administrateur, les utilisateurs de ce groupe déjà connectés conserveront leurs anciennes permissions jusqu'à leur prochaine déconnexion. Cette latence, notamment en cas de révocation d'un droit critique, représente un risque de sécurité inacceptable.
+
+**4.5 Solution Retenue : Mise à Jour Instantanée par Gestion de Session en Base de Données** Face à cette problématique, il a été décidé d'opter pour une solution plus avancée et plus élégante, garantissant une réactivité et une sécurité maximales.
+
+• **Principe de la Solution :** L'approche consiste à rendre les sessions actives des utilisateurs "adressables" et "modifiables" par le système lui-même. Pour ce faire, le mécanisme de stockage de session par défaut de PHP \(basé sur des fichiers\) est remplacé par une gestion centralisée en base de données.
+
+• **Implémentation Technique :**
+
+1. **Création d'une table sessions :** Une table dédiée est ajoutée à la base de données. Sa structure inclut session\_id, session\_data, et, de manière cruciale, une colonne user\_id qui lie chaque session active à un utilisateur unique.
+
+2. **Développement d'un DatabaseSessionHandler :** Une classe PHP personnalisée est créée. Elle implémente l'interface SessionHandlerInterface de PHP pour redéfinir les fonctions de lecture, d'écriture et de destruction des sessions, afin qu'elles interagissent avec la nouvelle table sessions.
+
+3. **Activation du gestionnaire :** L'application est configurée pour utiliser ce nouveau gestionnaire, centralisant de fait toutes les sessions dans la base de données.
+
+4. **Mécanisme de mise à jour "Live" :** Grâce à cette nouvelle architecture, lorsqu'un administrateur modifie les permissions d'un groupe, la logique applicative peut déclencher le processus suivant :
+
+▪ Identifier tous les utilisateurs membres du groupe modifié.
+
+▪ Pour chaque utilisateur, rechercher sa session active dans la table sessions via son user\_id.
+
+▪ Lire les données de sa session, mettre à jour le tableau des permissions avec les nouveaux droits, puis réécrire immédiatement les données modifiées dans la base de données.
+
+• **Résultat :** Le changement de permission est répercuté **instantanément** dans la session de l'utilisateur concerné, sans que celui-ci ait besoin de se déconnecter et sans aucun délai de latence. Au prochain clic, ses droits seront réévalués sur la base des informations fraîchement mises à jour.
+
+## **4.6 Conclusion **
+
+Le système d'habilitation de "GestionMySoutenance" repose sur une architecture RBAC robuste et éprouvée. Le choix d'implémenter une solution avancée de gestion de session en base de données pour permettre la mise à jour des droits en temps réel, bien que techniquement exigeant, place la sécurité et la réactivité au premier plan. Cette conception garantit que le contrôle d'accès est non seulement flexible et granulaire, mais aussi dynamique et capable de s'adapter instantanément aux changements de responsabilités, ce qui constitue un atout majeur pour la fiabilité de la plateforme.
+
+
+
+
+
+****
+
+**Section 3 : Logique Opérationnelle et Technique de la Commission de Validation** **6.1. Rôle et Mission **
+
+La Commission de Validation est une instance pédagogique centrale au sein de la plateforme
+
+"GestionMySoutenance". Sa mission principale est d'évaluer la qualité académique et scientifique des rapports soumis par les étudiants, une fois que ces derniers ont passé avec succès l'étape de vérification de la conformité administrative. Ce module fournit un environnement de travail sécurisé et structuré pour mener à bien cette mission.
+
+**6.2. Le Concept Central : La Session de Validation **
+
+Afin d'organiser le travail d'évaluation, le système s'appuie sur le concept de "Session de Validation". Une session est un objet métier créé et piloté par le président de la commission, agissant comme un conteneur pour un ou plusieurs rapports à évaluer. Cette approche permet de traiter les rapports par lots, de manière organisée.
+
+Le cycle de vie d'une session est simple : Planifiée -> En cours -> Clôturée.
+
+Pour offrir une flexibilité maximale, le système ne fait pas de distinction technique rigide entre les modes de réunion. Toute session est techniquement capable de recevoir des votes en ligne, permettant ainsi trois types de déroulement :
+
+• **Présentiel :** Les membres délibèrent en personne et le président consigne la décision finale.
+
+• **En Ligne \(Asynchrone\) :** Chaque membre vote individuellement via la plateforme, à son rythme.
+
+• **Hybride :** Une partie des membres est en salle tandis qu'un ou plusieurs autres participent et votent à distance via la plateforme, qui centralise alors tous les votes sans distinction.
+
+**6.3. Déroulement d'une Session et Processus de Vote **
+
+## **6.3.1. Lancement et Participation **
+
+Une fois les rapports rattachés à une session, le président peut la démarrer. Les membres de la commission sont alors notifiés et peuvent accéder aux rapports concernés via leur tableau de bord. La plateforme leur donne accès au contenu textuel intégral de chaque rapport ainsi qu'aux informations contextuelles sur l'étudiant.
+
+**6.3.2. Le Système de Vote Électronique et la Règle de l'Unanimité** Le cœur du processus décisionnel repose sur un système de vote électronique. Pour chaque rapport, un membre doit exprimer sa décision \(ex: "Approuvé", "Refusé", "Approuvé sous réserve de corrections"\). Toute décision qui n'est pas une approbation simple doit être accompagnée d'un commentaire circonstancié pour justifier l'avis émis.
+
+Une règle de gestion fondamentale a été implémentée : **la décision sur un rapport n'est validée** **que si l'unanimité des quatre \(4\) membres de la commission est atteinte. **
+
+**6.3.3. Gestion des Tours de Vote et des Blocages **
+
+Si, à l'issue d'un tour de scrutin, l'unanimité n'est pas obtenue \(ex: 3 "Approuvé" et 1 "Refusé"\), le système met le statut du rapport en attente \(EN\_DELIBERATION\). Le président est notifié de la divergence et peut alors :
+
+1. Initier une discussion via les outils de communication intégrés.
+
+2. Lancer un **nouveau tour de vote**. Le système incrémente alors le numéro du tour \(tour\_vote\) et ré-ouvre la possibilité de voter pour ce rapport.
+
+3. Si la situation reste bloquée après plusieurs tours, le président a la possibilité de **retirer** **le rapport de la session en cours** pour le soumettre à une délibération ultérieure, potentiellement avec une autre commission.
+
+**6.4. Gestion Temporelle et Clôture de la Session **
+
+Pour assurer la progression des travaux, chaque session peut être assortie d'une date\_fin\_prevue.
+
+• Le système envoie des notifications de rappel aux membres n'ayant pas encore voté à l'approche de cette échéance.
+
+• Si la date est dépassée, le président a le choix de prolonger la session en définissant une nouvelle date, ou de la clore. La clôture de la session archive l'état actuel des travaux et verrouille toute nouvelle action de vote.
+
+**6.5. Génération du Procès-Verbal \(PV\) de Session **
+
+La génération du PV est l'acte final qui formalise le travail d'une session. Elle n'est possible qu'une fois que tous les rapports de la session ont fait l'objet d'une décision finale.
+
+• **Rédaction et Contenu :** Le rédacteur désigné accède à une interface de rédaction où une grande partie des informations est pré-remplie, sur le modèle du document d'exemple fourni \(MIAGE\_Validation\_24\_01\_2025.pdf\).
+
+o **Données pré-remplies :** Date de la séance, liste des participants , nombre de dossiers traités , et pour chaque cas, le nom de l'étudiant , le thème , et le directeur de mémoire désigné.
+
+o **"Cases à remplir" :** Le rédacteur doit saisir le contenu des sections "Informations"
+
+, "Divers" , et surtout, les "Recommandations de la commission" pour chaque cas individuel.
+
+• **Validation et Diffusion :** Le projet de PV est ensuite soumis à un circuit de validation interne où chaque membre de la commission doit l'approuver. Une fois l'approbation collégiale obtenue, le PV est considéré comme définitif , puis automatiquement généré en format PDF et transmis à l'étudiant et aux services administratifs pour archivage.
+
+
+
+
+
+**Partie 1 : Synthèse Finale des Modifications de la Base de Données** Voici la checklist consolidée de toutes les modifications structurelles à apporter à votre fichier mysoutenance.sql pour refléter notre conception finale.
+
+## **A. Tables à AJOUTER **
+
+1. **sequences** : Table technique pour la génération des identifiants annuels \(\(nom\_sequence, annee, valeur\_actuelle\)\).
+
+2. **section\_rapport** : Pour stocker le contenu textuel des rapports, section par section.
+
+3. **penalite** et **statut\_penalite\_ref** : Pour la gestion et le suivi des pénalités de retard.
+
+4. **session\_validation** : Pour créer et gérer les sessions de travail de la commission \(avec les colonnes date\_debut\_session et date\_fin\_prevue\).
+
+5. **session\_rapport** : Table de liaison pour rattacher les rapports à une session\_validation.
+
+6. **sessions** : \(Optionnel, si implémentation temps réel\) Table pour stocker les sessions PHP
+
+en base de données et permettre leur mise à jour instantanée.
+
+**B. Tables à REMPLACER ou SUPPRIMER **
+
+1. **Remplacement :**
+
+o La table document\_soumis doit être **remplacée** par la nouvelle table document\_genere, qui est sémantiquement plus correcte pour votre besoin.
+
+2. **Suppression :**
+
+o valider
+
+o donner
+
+o niveau\_approbation
+
+o message
+
+**C. Modifications sur les Tables Existantes **
+
+1. **Table evaluer :**
+
+o Suppression de la colonne numero\_enseignant.
+
+o Modification de la clé primaire qui devient \(numero\_carte\_etudiant, id\_ecue\).
+
+2. **Table vote\_commission :**
+
+o Ajout
+
+de la colonne id\_session \(clé étrangère pointant vers session\_validation.id\_session\) pour lier chaque vote à une session précise.
+
+
+
+**Partie 2 : Prochaines Logiques Métier à Explorer **
+
+Maintenant que les fondations \(ID, RBAC, Commission\) sont solidement définies, voici une liste de logiques métier critiques à explorer pour assurer une couverture fonctionnelle complète de votre application.
+
+**1. Le Workflow Détaillé de l'Étudiant **
+
+Nous avons défini ce que l'étudiant peut faire, mais il faut maintenant détailler le "comment" et le "quand".
+
+• **Questions à explorer :**
+
+o Quel est le cycle de vie précis d'un rapport du point de vue de l'étudiant ? \(Ex: Brouillon -> Soumis -> Non Conforme -> En Correction -> Soumis de nouveau -> En Commission...\).
+
+o Comment l'interface de correction est-elle présentée à l'étudiant lorsque son rapport est jugé "Non Conforme" ? Le système met-il en évidence les sections ou commentaires de l'agent de conformité ?
+
+o Après une décision "Approuvé sous réserve de corrections" par la commission, quel est le processus exact pour que l'étudiant soumette ses corrections mineures ? Y a-t-il une nouvelle vérification complète ?
+
+o Comment les pénalités de retard sont-elles affichées à l'étudiant ? Bloquent-elles complètement la soumission jusqu'à régularisation ?
+
+**2. Les Workflows Spécifiques du Personnel Administratif** Nous avons deux rôles administratifs clés avec des tâches distinctes : l'Agent de Conformité et le Responsable Scolarité.
+
+• **Questions à explorer :**
+
+o **Agent de Conformité :** À quoi ressemble son tableau de bord ? Comment les rapports à vérifier lui sont-ils présentés ? Dispose-t-il d'une "checklist" de conformité pour l'aider dans son évaluation ?
+
+o **Responsable Scolarité \(RS\) :** Quel est le processus étape par étape qu'il suit pour activer le compte d'un étudiant ? \(Ex: 1. Vérifier paiement, 2. Valider stage, 3.
+
+Cliquer sur "Activer"\).
+
+o Comment le RS est-il notifié et comment traite-t-il une demande de réclamation étudiante ? Peut-il l'assigner à un autre service ?
+
+o Quelle est l'interface du RS pour la saisie des notes et la génération des bulletins
+
+?
+
+**3. Le Système de Notifications Automatisées **
+
+Un bon système de notification est proactif et informe les utilisateurs des actions requises ou des changements de statut.
+
+• **Questions à explorer :**
+
+o Quels sont les **événements déclencheurs** pour chaque notification ? \(Ex: Rapport soumis, Vote enregistré, Décision finale rendue, PV disponible, Rappel de date de fin de session...\).
+
+o Qui sont les **destinataires** pour chaque type de notification ? \(Ex: une soumission notifie l'étudiant et l'agent de conformité ; une décision finale notifie l'étudiant et le RS\).
+
+o Quels seront les **canaux de diffusion** ? \(Notifications internes à la plateforme, envoi d'emails, ou les deux ?\).
+
+o Le contenu des notifications sera-t-il personnalisable par l'administrateur ?
+
+**4. Le Cycle de Vie des Données et l'Archivage **
+
+Une application robuste doit prévoir ce qu'il advient des données sur le long terme.
+
+• **Questions à explorer :**
+
+o Que se passe-t-il lorsqu'un étudiant est diplômé ou abandonne ses études ? Son compte est-il désactivé, anonymisé ou supprimé ?
+
+o Combien de temps les rapports, les votes de la commission et les PV doivent-ils être conservés et accessibles en ligne ?
+
+o Faut-il prévoir une stratégie d'archivage automatique pour les données de plus de X années afin de maintenir les performances de la base de données principale
+
+?
+
+o Comment cette gestion des données se conforme-t-elle aux réglementations sur la protection des données personnelles ?
+
+Explorer ces quatre logiques vous fournira une matière extrêmement riche pour la suite de la conception et la rédaction de votre rapport final.
+
+
+
+
+
+Dans la version finale et optimisée de votre base de données :
+
+• **Nombre de tables :** Il y a au total **60 tables**.
+
+• **Nombre de clés étrangères :** Il y a **73 clés étrangères** définies pour lier ces tables entre elles et garantir l'intégrité des données.
+
+
+
+Tableau récapitulatif des 60 tables de votre base de données finale, avec une description concise de leur rôle :
+
+**Nom de la Table**
+
+## **Description**
+
+Historise les grades académiques obtenus par un
+
+## **acquerir**
+
+enseignant au fil du temps.
+
+Table de référence \(audit\) listant tous les types d'actions **action**
+
+système pouvant être enregistrées.
+
+Lie un enseignant à un rapport d'étudiant pour une session **affecter**
+
+de jury, en précisant son statut \(directeur de mémoire, etc.\).
+
+Référentiel des années académiques \(ex: 2024-2025\), avec
+
+## **annee\_academique**
+
+leur date de début, de fin et leur statut actif.
+
+Enregistre l'action de vérification de la conformité **approuver**
+
+administrative d'un rapport par un membre du personnel.
+
+## **attribuer**
+
+Lie un enseignant à ses domaines de spécialité.
+
+Représente le Procès-Verbal \(PV\) de validation, qu'il soit **compte\_rendu**
+
+individuel ou pour une session complète.
+
+Représente une conversation de la messagerie interne **conversation**
+
+\(chat direct ou de groupe\).
+
+Référentiel des décisions de fin d'année pour un étudiant **decision\_passage\_ref**
+
+\(Admis, Ajourné, etc.\).
+
+Référentiel des décisions possibles sur un projet de PV
+
+## **decision\_validation\_pv\_ref**
+
+\(Approuvé, Modification demandée\).
+
+Référentiel des décisions de vote possibles pour la **decision\_vote\_ref**
+
+commission \(Approuvé, Refusé, Discussion...\).
+
+Registre de tous les documents PDF générés par le **document\_genere**
+
+système \(PV, attestations, bulletins\).
+
+Référentiel
+
+des
+
+Éléments Constitutifs
+
+d'Unités
+
+## **ecue**
+
+d'Enseignement \(les matières\).
+
+Table principale de la piste d'audit, qui enregistre les **enregistrer**
+
+actions importantes des utilisateurs.
+
+## **enseignant**
+
+Contient les informations de profil des enseignants.
+
+Référentiel des entreprises où les étudiants effectuent **entreprise**
+
+leurs stages.
+
+## **etudiant**
+
+Contient les informations de profil des étudiants.
+
+Enregistre les notes obtenues par les étudiants pour **evaluer**
+
+chaque ECUE \(matière\).
+
+Lie un étudiant à une entreprise pour un stage, en **faire\_stage**
+
+précisant les dates et le tuteur.
+
+Référentiel des fonctions administratives que peut
+
+## **fonction**
+
+occuper un enseignant \(ex: Chef de filière\).
+
+Référentiel des grades académiques des enseignants \(ex: **grade**
+
+Professeur, Maître de Conférences\).
+
+Définit les rôles fonctionnels \(ex: Commission, Scolarité\) **groupe\_utilisateur**
+
+pour le système de permissions \(RBAC\).
+
+Stocke les anciens hachages de mots de passe pour **historique\_mot\_de\_passe**
+
+empêcher leur réutilisation.
+
+Enregistre l'inscription administrative d'un étudiant à un **inscrire**
+
+niveau d'étude pour une année donnée.
+
+Table technique qui enregistre quel utilisateur a lu quel **lecture\_message**
+
+message dans une conversation.
+
+Stocke le contenu de chaque message envoyé dans la **message\_chat**
+
+messagerie interne.
+
+Référentiel des niveaux d'accès aux données \(ex: Total, **niveau\_acces\_donne**
+
+Restreint\) pour le RBAC.
+
+Référentiel des niveaux d'étude \(ex: Master 1, Master 2
+
+## **niveau\_etude**
+
+MIAGE\).
+
+Stocke les modèles et les contenus des notifications **notification**
+
+envoyées par le système.
+
+Historise les fonctions administratives occupées par un **occuper**
+
+enseignant dans le temps.
+
+Lie les utilisateurs aux conversations de la messagerie **participant\_conversation**
+
+auxquelles ils participent.
+
+Enregistre et suit les pénalités appliquées aux étudiants **penalite**
+
+pour soumission tardive.
+
+Contient les informations de profil des membres du **personnel\_administratif**
+
+personnel administratif.
+
+Table d'audit qui trace spécifiquement l'accès d'un **pister**
+
+utilisateur à un traitement \(permission\).
+
+Lie un PV de type "Session" à tous les rapports qui ont été **pv\_session\_rapport**
+
+traités dans cette session.
+
+Table centrale contenant les métadonnées de chaque
+
+## **rapport\_etudiant**
+
+rapport de soutenance \(thème, résumé, statut...\).
+
+Table de liaison \(matrice\) du RBAC, qui associe les **rattacher**
+
+permissions \(traitement\) aux rôles \(groupe\_utilisateur\).
+
+Lie une notification à un utilisateur destinataire et suit son **recevoir**
+
+état de lecture.
+
+Stocke les réclamations soumises par les étudiants et leur **reclamation**
+
+traitement par l'administration.
+
+Lie un enseignant à un PV sur lequel il a agi \(ex: rédaction, **rendre**
+
+approbation\).
+
+Stocke le contenu textuel de chaque section d'un rapport
+
+## **section\_rapport**
+
+d'étudiant.
+
+Table technique utilisée par le système pour générer des
+
+## **sequences**
+
+identifiants uniques, lisibles et annuels.
+
+Table de liaison qui rattache les rapports à une session de **session\_rapport**
+
+validation spécifique.
+
+Représente une session de travail de la commission de **session\_validation**
+
+validation, avec ses dates, son mode et son statut.
+
+Table technique pour stocker les données de session PHP
+
+## **sessions**
+
+en base de données \(pour la mise à jour des droits en temps réel\).
+
+Référentiel des spécialités de formation \(ex: MIAGE, Génie **specialite**
+
+Logiciel\).
+
+Référentiel des statuts de la vérification de conformité **statut\_conformite\_ref**
+
+\(Conforme, Non Conforme\).
+
+Référentiel du statut d'un enseignant dans une **statut\_jury**
+
+commission \(Président, Membre, Rapporteur\).
+
+## **statut\_paiement\_ref**
+
+Référentiel des statuts de paiement des frais d'inscription.
+
+Référentiel des statuts d'une pénalité \(Due, Réglée, **statut\_penalite\_ref**
+
+Annulée\).
+
+Référentiel des statuts d'un Procès-Verbal \(En rédaction, **statut\_pv\_ref**
+
+En validation, Validé\).
+
+Référentiel des statuts d'un rapport tout au long de son **statut\_rapport\_ref**
+
+cycle de vie \(Brouillon, Soumis, En commission...\).
+
+Référentiel des statuts d'une réclamation \(Reçue, En **statut\_reclamation\_ref**
+
+cours, Clôturée\).
+
+Catalogue de toutes les permissions granulaires possibles **traitement**
+
+dans l'application pour le système RBAC.
+
+Référentiel des types de documents que le système peut
+
+## **type\_document\_ref**
+
+générer \(PV, Attestation...\).
+
+Définit la catégorie générale d'un utilisateur \(Étudiant, **type\_utilisateur**
+
+Enseignant, Personnel Administratif...\).
+
+Référentiel
+
+des
+
+Unités
+
+d'Enseignement
+
+\(les
+
+## **ue**
+
+regroupements de matières\).
+
+Table centrale pour tous les comptes utilisateurs, gérant **utilisateur**
+
+l'authentification et les accès.
+
+Enregistre l'action d'approbation d'un PV par chaque **validation\_pv**
+
+membre de la commission.
+
+Enregistre chaque vote individuel d'un membre de la **vote\_commission**
+
+commission pour un rapport donné dans une session.
+
+
+
+****
+
+****
+
+****
+
+**Section 4 : Workflow de Rédaction et de Soumission du Rapport Étudiant** **7.1. Introduction : Une Approche Centrée sur l'Expérience Utilisateur** La conception du module de rédaction de la plateforme "GestionMySoutenance" a été guidée par un principe fondamental : offrir à l'étudiant une expérience d'édition à la fois puissante, flexible et familière. L'objectif est de reproduire la souplesse d'un logiciel de traitement de texte moderne, tel que Microsoft Word, pour minimiser la friction technique et permettre à l'étudiant de se concentrer sur la qualité de son contenu.
+
+Ce chapitre détaille le parcours complet de l'étudiant, depuis l'activation de ses droits de rédaction jusqu'à la soumission formelle de son rapport, en passant par les phases de correction.
+
+**7.2. Prérequis au Lancement du Processus **
+
+L'accès à la fonctionnalité de rédaction n'est pas automatique. Il est conditionné par la validation du dossier administratif complet de l'étudiant. Ce processus est piloté par le Responsable Scolarité \(RS\) et agit comme un premier point de contrôle métier. Avant de pouvoir commencer la rédaction, un étudiant doit impérativement avoir : 1. Une inscription administrative validée pour l'année académique.
+
+2. Un statut de paiement des frais de scolarité à jour.
+
+3. Un stage officiellement enregistré et validé par l'administration.
+
+4. Régularisé toute pénalité de retard éventuelle.
+
+Ce n'est qu'après la vérification de ces prérequis que le RS active le compte de l'étudiant, lui ouvrant ainsi les portes de l'interface de rédaction.
+
+**7.3. Le Cycle de Vie de la Rédaction **
+
+## **7.3.1. Initialisation du Rapport **
+
+Lors de sa première connexion, l'étudiant est invité à créer son espace de travail. Cette initialisation consiste à choisir un modèle de rapport pré-formaté ou de partir d'une structure vierge. Il doit également renseigner les métadonnées de son travail \(thème, directeur de mémoire pressenti...\).
+
+En arrière-plan, le système crée une nouvelle entrée dans la table rapport\_etudiant avec le statut RAP\_BROUILLON et génère les différentes fiches de section \(section\_rapport\) correspondantes au modèle choisi.
+
+**7.3.2. L'Interface d'Édition et la Sauvegarde Continue** Le cœur de l'expérience utilisateur réside dans l'éditeur de texte riche \(WYSIWYG\). Pour chaque section de son rapport, l'étudiant dispose d'un environnement d'édition complet lui permettant de mettre en forme son texte, d'insérer des listes, des titres hiérarchisés ou des tableaux.
+
+Pour garantir une expérience sereine et éviter toute perte de données, un mécanisme de **sauvegarde automatique \(auto-save\)** est implémenté. Sans aucune action manuelle de l'étudiant, le système enregistre de manière continue et transparente le contenu de la section en cours de rédaction dans la base de données.
+
+## **7.3.3. La Soumission Formelle **
+
+Une fois que l'étudiant estime son travail achevé, il procède à la soumission via une action dédiée. Cet acte est un jalon critique et irréversible dans le workflow :
+
+• Le statut du rapport est mis à jour à RAP\_SOUMIS.
+
+• Le contenu de toutes les sections est verrouillé en lecture seule, empêchant toute modification ultérieure.
+
+• Une notification est automatiquement envoyée à l'étudiant pour accuser réception, ainsi qu'au service de Contrôle de Conformité pour l'informer qu'un nouveau rapport est prêt à être vérifié.
+
+**7.4. La Gestion du Circuit de Correction **
+
+Le processus n'est pas toujours linéaire. Si un rapport est jugé non-conforme par l'administration, le système est conçu pour gérer ce retour de manière fluide.
+
+• L'étudiant est notifié du changement de statut de son rapport en RAP\_NON\_CONF.
+
+• L'interface de rédaction est automatiquement déverrouillée, lui permettant d'accéder de nouveau à ses sections pour y apporter les corrections demandées.
+
+• Les commentaires de l'agent de conformité sont affichés de manière claire et visible pour le guider.
+
+• Une fois les modifications effectuées, l'étudiant peut soumettre à nouveau son rapport corrigé, qui réintègre alors le circuit de validation.
+
+**7.5. Conclusion sur le Module de Rédaction **
+
+En définitive, le module de rédaction de "GestionMySoutenance" est conçu pour offrir une expérience utilisateur souple et intuitive, tout en étant soutenu par un workflow applicatif rigoureux. L'approche de type "traitement de texte", combinée à un système de statuts et de notifications, garantit que la liberté créative de l'étudiant s'inscrit dans un cadre procédural qui assure la traçabilité, la conformité et l'efficacité du processus global de validation.
+
+
+
+**Section 5 : Conception du Module de Suivi de Dossier Étudiant** **5.1. Introduction et Objectifs **
+
+Afin d'améliorer l'expérience utilisateur et de garantir une transparence totale tout au long du cycle de vie d'un rapport de soutenance, un module de suivi de dossier dynamique est intégré à l'Espace Étudiant. L'objectif principal de cette fonctionnalité est de transformer une période d'attente, souvent source d'incertitude, en un processus guidé et informatif.
+
+Ce module vise à :
+
+• Fournir à l'étudiant une **visibilité en temps réel** sur l'état d'avancement de son dossier.
+
+• **Contextualiser le statut actuel** au sein du workflow global de validation.
+
+• **Communiquer de manière proactive** les actions requises, notamment en cas de demande de correction.
+
+• **Réduire la charge de support** pour le personnel administratif en répondant par avance aux questions de suivi des étudiants.
+
+## **5.2. Architecture Fonctionnelle **
+
+La conception retenue repose sur une approche visuelle et intuitive, décomposée en deux éléments d'interface complémentaires, pilotés par une logique serveur robuste.
+
+**5.2.1. Le Visualiseur de Workflow \("Stepper"\)** L'élément central de l'interface est une représentation graphique de la progression du rapport.
+
+Il prend la forme d'une ligne de temps verticale qui matérialise l'ensemble des étapes prédéfinies du processus de validation, de la soumission initiale à l'archivage final.
+
+Chaque étape de cette ligne de temps est affichée avec un état visuel distinct pour une compréhension immédiate :
+
+• **Étape Terminée :** Indiquée par une icône de validation \(ex: \) et la date à laquelle l'étape a été franchie.
+
+• **Étape Actuelle :** Mise en exergue visuellement \(ex: \) pour signifier la position présente du dossier dans le processus.
+
+• **Étape Future :** Représentée de manière neutre \(ex: \), informant l'étudiant des jalons à venir.
+
+Cet affichage est directement gouverné par la colonne etape\_workflow de la table de référence statut\_rapport\_ref, garantissant un ordre logique et constant.
+
+**5.2.2. Le Panneau d'Information Contextuelle**
+
+Adjacent au visualiseur de workflow, un panneau de détails fournit des informations spécifiques à l'étape actuelle. Le contenu de ce panneau est dynamique et s'adapte au statut du rapport :
+
+• **Information Générale :** Pour les statuts d'attente \(ex: "En Commission"\), un message explicatif rassure l'étudiant et précise qu'aucune action n'est requise de sa part.
+
+• **Information Spécifique et Action Requise :** Dans les cas où une intervention de l'étudiant est nécessaire \(ex: statut "Non Conforme"\), le panneau affiche : 1. Un titre clair signalant une action requise.
+
+2. Les commentaires détaillés et constructifs saisis par le personnel administratif ou les membres de la commission.
+
+3. Un bouton d'appel à l'action \(ex: "Modifier mon rapport"\) qui déverrouille les fonctionnalités d'édition nécessaires.
+
+**5.3. Orchestration Technique et Flux de Données **
+
+La robustesse de cette fonctionnalité repose sur une dissociation claire entre la logique de présentation \(frontend\) et la logique métier \(backend\), qui s'appuie sur le modèle de données existant.
+
+1. **Source de Vérité :** La table statut\_rapport\_ref définit la "carte" du workflow, tandis que la clé étrangère id\_statut\_rapport dans la table rapport\_etudiant agit comme un "pointeur"
+
+indiquant la position actuelle.
+
+2. **Historisation :** La table d'audit enregistrer sert de mémoire au système. Chaque transition de statut d'un rapport y est consignée avec un horodatage précis, permettant de reconstituer l'historique daté des étapes franchies.
+
+3. **Flux de Données :** Lors de la consultation, le serveur orchestre la collecte des données
+
+   : il identifie le statut actuel du rapport, récupère la définition complète du workflow,
+
+interroge le journal d'audit pour l'historique, et collecte les informations contextuelles \(comme les commentaires de non-conformité depuis la table approuver\).
+
+4. **Présentation :** Le serveur assemble ces informations en un objet de données unique et structuré, que l'interface utilisateur se charge uniquement d'afficher. Cette architecture garantit que toute modification du workflow \(ajout/suppression d'une étape\) ne nécessite qu'une mise à jour des données de référence, sans impacter le code applicatif.
+
+## **5.4. Conclusion **
+
+L'approche de suivi de workflow visuel et dynamique constitue une plus-value majeure pour la plateforme "GestionMySoutenance". En offrant clarté, guidage et autonomie à l'étudiant, elle améliore significativement son expérience tout en optimisant les processus administratifs. Sa conception, solidement ancrée dans le modèle de données, assure une solution à la fois robuste, maintenable et évolutive.
+
+
+
+**Section 6 : Conception du Circuit de Correction des Rapports** **6.1. Introduction et Objectifs **
+
+La gestion des corrections est une étape interactive fondamentale du processus de validation.
+
+Qu'elle fasse suite à une vérification de conformité administrative ou à une évaluation académique par la commission, elle doit être gérée par un mécanisme à la fois clair pour l'étudiant et efficace pour les évaluateurs.
+
+L'objectif de ce module est de mettre en œuvre une **boucle de rétroaction intégrée et traçable** sans alourdir le schéma de la base de données. La solution retenue s'appuie sur l'optimisation des tables existantes pour :
+
+• **Déverrouiller** l'interface de rédaction de manière conditionnelle pour l'étudiant.
+
+• **Présenter** les demandes de correction de manière contextuelle.
+
+• **Capturer** et **transmettre** une note explicative rédigée par l'étudiant lors de sa nouvelle soumission.
+
+• **Garantir** une piste d'audit complète de chaque cycle de correction.
+
+## **6.2. Architecture Fonctionnelle et Logique **
+
+La fonctionnalité est conçue comme un cycle en trois phases, orchestré par le statut du rapport et exploitant la flexibilité de la table d'audit.
+
+**6.2.1. Phase 1 : Déclenchement du Cycle de Correction**
+
+Le processus est initié par un évaluateur. En changeant le statut d'un rapport à **RAP\_NON\_CONF**
+
+\(pour une non-conformité administrative\) ou **RAP\_CORRECT** \(pour des corrections académiques\), le système active le mode "correction". Les commentaires et justifications de l'évaluateur sont enregistrés dans les tables prévues à cet effet \(approuver ou vote\_commission\), fournissant le contexte nécessaire à l'étudiant.
+
+**6.2.2. Phase 2 : Interface de Correction de l'Étudiant** Suite au changement de statut, l'environnement de l'étudiant s'adapte dynamiquement :
+
+1. **Déverrouillage Conditionnel :** Le système de contrôle d'accès autorise l'édition du rapport. L'interface de rédaction \(WYSIWYG\), précédemment en lecture seule, redevient pleinement fonctionnelle.
+
+2. **Affichage Contextuel :** Les commentaires de l'évaluateur sont affichés de manière proéminente au sein de l'interface, permettant à l'étudiant de travailler sur ses modifications tout en ayant les instructions sous les yeux.
+
+3. **Champ de Note Explicative :** Un champ de saisie de texte obligatoire est présenté à l'étudiant. Il est invité à y résumer les modifications apportées, facilitant ainsi le travail de ré-évaluation.
+
+**6.2.3. Phase 3 : Re-soumission et Traçabilité**
+
+L'acte de re-soumission par l'étudiant est un événement métier clé, géré de la manière suivante
+
+: 
+
+1. **Capture de la Note :** Le contenu de la note explicative est encapsulé dans un champ JSON au sein de la table d'audit enregistrer.
+
+2. **Audit de l'Action :** Une nouvelle entrée est créée dans la table enregistrer avec une id\_action spécifique \(ex: SOUMISSION\_CORRECTION\). Cette entrée lie l'étudiant, le rapport, la date, et la note explicative, créant un enregistrement d'audit atomique et complet.
+
+3. **Mise à Jour du Statut :** Le statut du rapport est mis à jour pour le réintégrer dans le circuit de validation \(ex: retour à RAP\_SOUMIS\).
+
+4. **Verrouillage :** L'interface d'édition est de nouveau verrouillée en lecture seule.
+
+**6.3. Implémentation Technique sans Table Additionnelle** La décision de ne pas créer de table dédiée à la note de correction repose sur une utilisation intelligente de la table enregistrer. Le champ details\_action \(de type JSON\) est mis à profit pour stocker des données contextuelles riches.
+
+• **Stockage :** La note explicative est stockée sous une clé spécifique \(ex:
+
+"note\_explicative": "..."\) dans le champ details\_action de l'enregistrement d'audit correspondant à l'action de re-soumission.
+
+• **Récupération :** Lorsqu'un évaluateur consulte une version corrigée, le système effectue une requête ciblée sur la table enregistrer pour extraire et afficher la dernière note soumise par l'étudiant pour ce rapport.
+
+## **6.4. Conclusion **
+
+Cette approche de gestion des corrections est à la fois élégante et robuste. Elle offre une expérience utilisateur guidée et transparente sans nécessiter de modification structurelle du schéma de la base de données. En exploitant la flexibilité de la table d'audit existante, le système garantit une traçabilité complète et sémantiquement cohérente de chaque cycle de correction, tout en maintenant un modèle de données concis et maîtrisé.
+
+
+
+
+
+**Section 7 : Processus d'Activation des Droits et de Création des Comptes Étudiants** **7.1. Rôle et Mission **
+
+L'accès d'un étudiant à la plateforme "GestionMySoutenance" n'est pas automatique. Il est conditionné par la validation formelle de son dossier administratif par le Responsable Scolarité \(RS\). Cette étape cruciale agit comme un point de contrôle métier, garantissant que seuls les étudiants administrativement aptes peuvent initier le processus de rédaction et de soumission de leur rapport.
+
+L'objectif de cette fonctionnalité est de fournir au RS un outil efficace et sécurisé pour : 1. **Vérifier** les prérequis administratifs de manière centralisée.
+
+2. **Créer** les comptes utilisateurs pour les étudiants éligibles.
+
+3. **Automatiser** la communication des identifiants de connexion.
+
+La conception de l'interface permet au RS de traiter les dossiers individuellement ou **par lots**, optimisant ainsi son temps de travail en début ou en cours d'année académique.
+
+## **7.2. Architecture Fonctionnelle **
+
+La solution repose sur la dissociation fondamentale entre l'entité administrative \(etudiant\) et l'entité d'accès \(utilisateur\). Un enregistrement peut exister dans la table etudiant sans avoir de compte utilisateur correspondant \(le champ de liaison numero\_utilisateur étant NULL\).
+
+L'activation consiste précisément à créer ce compte et à établir cette liaison.
+
+**7.2.1. L'Interface de Validation du Responsable Scolarité \(RS\)** Le RS dispose d'un tableau de bord dédié, "Dossiers en attente de création de compte", qui liste tous les étudiants n'ayant pas encore d'accès à la plateforme.
+
+• **Vue par Lots :** L'interface présente une liste tabulaire des étudiants éligibles. Chaque ligne correspond à un étudiant et affiche :
+
+o Son identité \(Nom, Prénom, N° de carte\).
+
+o Une série de colonnes "Checklist" qui valident visuellement chaque prérequis :
+
+▪ **Paiement Scolarité :** / \(basé sur la table inscrire\).
+
+▪ **Validation Stage :** / \(basé sur la table faire\_stage\).
+
+▪ **Pénalités Régularisées :** / \(basé sur la table penalite\).
+
+o Une case à cocher \(checkbox\) pour la sélection.
+
+• **Logique de Sélection :** Le RS peut cocher les cases des étudiants qu'il souhaite activer.
+
+De manière cruciale, **la case à cocher d'un étudiant est désactivée \(grisée\) si l'un de** **ses prérequis n'est pas rempli**. Cela empêche toute erreur de sélection et garantit que seuls les dossiers complets peuvent être traités.
+
+• **Action Groupée :** Un unique bouton d'action, **"Valider et Créer les Comptes** **Sélectionnés" **, est présent en haut ou en bas de la liste. Il s'active dès qu'au moins un étudiant éligible est sélectionné.
+
+**7.3. Algorithme de Création et de Notification par Lots** Lorsque le RS clique sur le bouton d'action, le système exécute une boucle sur tous les étudiants sélectionnés. Pour chaque étudiant, il initie une **transaction individuelle** pour garantir l'intégrité de chaque création de compte.
+
+Le processus pour chaque étudiant est le suivant : 1. **Génération des Données :** Le système génère un identifiant utilisateur unique \(ex: ETU-2024-xxxx\), un login par défaut, et un mot de passe temporaire sécurisé.
+
+2. **Création du Compte :** Une nouvelle entrée est insérée dans la table utilisateur. Le mot de passe temporaire y est stocké sous forme hachée, et le statut du compte est immédiatement défini sur 'actif'.
+
+3. **Liaison des Entités :** La table etudiant est mise à jour pour y inscrire le nouvel numero\_utilisateur, liant ainsi le dossier administratif au compte d'accès.
+
+4. **Audit :** L'action de création est consignée dans la table enregistrer, identifiant le RS
+
+comme l'opérateur et l'étudiant comme l'entité concernée.
+
+5. **Mise en File de la Notification :** Une fois la transaction pour un étudiant réussie, le système ajoute une tâche à une file d'attente pour l'envoi d'un email.
+
+Une fois la boucle terminée, un service indépendant traite la file d'attente et envoie à chaque nouvel utilisateur un email de bienvenue personnalisé, contenant son login et son mot de passe temporaire, avec l'instruction de le modifier à la première connexion.
+
+## **7.4. Conclusion **
+
+Cette approche de validation et de création par lots offre un équilibre optimal entre contrôle, sécurité et efficacité. Elle confère au Responsable Scolarité un pouvoir de validation final et délibéré, tout en lui fournissant les outils pour traiter de grands volumes de dossiers rapidement.
+
+La logique de désactivation des sélections non conformes prévient les erreurs humaines, et l'automatisation de la création de compte et de l'envoi des identifiants garantit un processus fiable, traçable et professionnel.
+
+
+
+**Section 8 : Détection et Gestion des Pénalités de Retard** **8.1. Introduction et Objectifs **
+
+Afin d'assurer le respect des délais de finalisation des études et de garantir une application équitable des règlements de l'établissement, la plateforme "GestionMySoutenance" intègre un module de détection et de gestion des pénalités pour retard de soutenance. Ce processus est un prérequis essentiel à la création du compte utilisateur, assurant qu'aucun étudiant en situation irrégulière ne puisse initier son parcours de soumission.
+
+Les objectifs de cette fonctionnalité sont :
+
+• **Détecter automatiquement et systématiquement** les étudiants ayant dépassé le délai réglementaire pour la validation de leur rapport.
+
+• **Créer une trace formelle** de chaque pénalité due dans le système.
+
+• **Fournir au Responsable Scolarité \(RS\)** les informations nécessaires pour gérer la régularisation de ces pénalités.
+
+• **Bloquer la création de compte** tant que la situation administrative de l'étudiant n'est pas entièrement régularisée.
+
+**8.2. Architecture Fonctionnelle : Une Approche Hybride **
+
+La solution retenue est une approche hybride qui combine une détection automatisée avec une gestion manuelle, garantissant à la fois l'efficacité, l'objectivité et le contrôle humain.
+
+**8.2.1. Détection Automatisée par Tâche Planifiée \(CRON Job\)** Le cœur de la détection est un script automatisé qui s'exécute périodiquement \(ex: de manière nocturne\). Ce script agit comme un auditeur proactif et infatigable. Son rôle est de : 1. **Identifier la Population Cible :** Le script cible exclusivement les étudiants inscrits au niveau d'étude final \(ex: Master 2\) et qui ne disposent pas encore d'un compte utilisateur actif \(numero\_utilisateur est NULL\).
+
+2. **Calculer le Retard :** Pour chaque étudiant cible, il compare son année d'inscription initiale \(issue de la table inscrire\) à l'année académique en cours.
+
+3. **Appliquer les Règles Métier :** Si le nombre d'années écoulées dépasse le seuil défini par l'établissement \(ex: plus d'un an après l'année nominale de fin d'études\), une pénalité est déclenchée.
+
+4. **Générer la Pénalité :** Si aucune pénalité n'est déjà enregistrée pour l'année en cours, le script crée une nouvelle entrée dans la table penalite avec le statut PEN\_DUE. Cette action est auditée et une notification est envoyée au RS pour l'informer de la nouvelle pénalité générée.
+
+Ce processus garantit que la table penalite est constamment à jour et reflète l'état administratif réel de tous les étudiants en attente, avant même toute intervention du RS.
+
+**8.2.2. Processus de Validation et de Régularisation par le RS**
+
+L'interface du RS pour la création des comptes est directement alimentée par les informations générées par le script.
+
+1. **Consultation du Dossier :** Lorsque le RS consulte le dossier d'un étudiant en attente, l'interface affiche une checklist de prérequis en temps réel.
+
+2. **Vérification de la Pénalité :** L'un des points de cette checklist est la "Régularisation des Pénalités". Le système vérifie dans la table penalite si une entrée avec le statut PEN\_DUE
+
+existe pour l'étudiant.
+
+3. **Contrôle de l'Action :**
+
+o **Si une pénalité est due**, la condition est marquée comme non remplie \( \). Par conséquent, l'option de sélectionner cet étudiant pour la création de compte est **désactivée**, empêchant toute erreur de la part du RS.
+
+o **Si aucune pénalité n'est due**, la condition est validée \( \).
+
+4. **Régularisation Manuelle :** Il incombe au RS de gérer le processus de régularisation avec l'étudiant. Une fois la pénalité soldée, le RS utilise son interface de gestion pour mettre à jour le statut de l'entrée dans la table penalite de PEN\_DUE à PEN\_REGLEE.
+
+5. **Déblocage :** Suite à cette mise à jour, lors d'une nouvelle consultation du dossier, la condition de pénalité sera validée, rendant l'étudiant éligible à la création de son compte \(si les autres prérequis sont également remplis\).
+
+## **8.3. Conclusion **
+
+Cette synergie entre un automate de détection et un opérateur humain de gestion constitue une solution robuste et sécurisée. L'automatisation assure une application systématique et équitable des règles, tandis que le contrôle manuel par le RS garantit que les actions critiques
+
+– la régularisation d'une pénalité et la création d'un compte – restent des décisions humaines, délibérées et traçables. Ce mécanisme préventif est fondamental pour l'intégrité du processus de soutenance.
+
+Absolument. Voici le résumé de cette fonctionnalité, structuré au format rapport.
+
+
+
+**Section 9 : Création et Gestion des Sessions de Validation** **9.1. Rôle et Objectifs **
+
+La Session de Validation est le concept central qui structure le travail d'évaluation de la commission pédagogique. Elle agit comme un **conteneur de travail dynamique**, permettant au Président de la commission \(ou à un membre délégué\) de regrouper, gérer et suivre l'évaluation de plusieurs rapports de manière organisée.
+
+Les objectifs de ce module sont de fournir une interface intuitive pour :
+
+• **Créer** des sessions de travail flexibles.
+
+• **Composer** dynamiquement le lot de rapports à évaluer.
+
+• **Piloter** le cycle de vie de la session, de sa préparation à sa clôture.
+
+• **Automatiser** la communication avec les membres de la commission.
+
+**9.2. Architecture Fonctionnelle : Le Cycle de Vie de la Session** La fonctionnalité est conçue autour d'un cycle de vie en trois états, qui offre un maximum de flexibilité et de contrôle au Président de session. Ce cycle est matérialisé par le champ statut\_session dans la table session\_validation.
+
+**9.2.1. Phase 1 : Planification et Composition \(Statut : planifiee\)** C'est la phase de préparation.
+
+1. **Création :** Le Président initie une nouvelle session via un formulaire simple, en définissant ses propriétés de base comme son nom \(nom\_session\) et ses dates prévisionnelles. À ce stade, la session est créée avec le statut planifiee.
+
+2. **Composition :** Le Président accède à une interface de gestion dédiée. Cette interface lui présente la liste de tous les rapports éligibles \(ceux ayant le statut RAP\_CONF et n'étant pas déjà affectés à une autre session active\). Il peut alors dynamiquement **ajouter ou** **retirer** des rapports de sa session. Cette phase permet de constituer le lot de travail de manière itérative et réfléchie.
+
+**9.2.2. Phase 2 : Exécution de l'Évaluation \(Statut : en\_cours\)** Cette phase est déclenchée par une action manuelle et délibérée du Président.
+
+1. **Démarrage :** Lorsque la composition de la session est finalisée, le Président la "démarre".
+
+Cette action fait passer le statut à en\_cours.
+
+2. **Verrouillage et Notification :** Le démarrage de la session a deux effets immédiats : o La composition de la session est **verrouillée** ; il n'est plus possible d'y ajouter ou d'en retirer des rapports, garantissant un périmètre d'évaluation stable.
+
+o Une **notification** est automatiquement envoyée à tous les membres de la commission, les informant du début de la session et les invitant à procéder à l'évaluation des rapports concernés.
+
+**9.2.3. Phase 3 : Finalisation et Archivage \(Statut : cloturee\)** C'est l'étape de conclusion du travail d'évaluation.
+
+1. **Condition de Clôture :** Le système n'autorise la clôture d'une session que lorsque tous les rapports qui y sont rattachés ont fait l'objet d'une décision finale \(ex: unanimité des votes atteinte\).
+
+2. **Clôture Manuelle :** Le Président déclenche la clôture de la session. Le statut passe à cloturee.
+
+3. **Archivage :** La session devient un enregistrement historique non modifiable. Cette étape est le prérequis à la génération du Procès-Verbal \(PV\) de session, qui formalise l'ensemble des décisions prises.
+
+## **9.3. Implémentation Technique **
+
+La mise en œuvre de cette fonctionnalité s'appuie sur l'interaction de plusieurs tables clés :
+
+• **session\_validation** stocke les métadonnées et l'état du cycle de vie de la session.
+
+• **session\_rapport** est la table de liaison qui matérialise l'association entre une session et les rapports qu'elle contient.
+
+• **rapport\_etudiant** et **vote\_commission** sont interrogées pour, respectivement, peupler la liste des rapports éligibles et suivre la progression des évaluations.
+
+## **9.4. Conclusion **
+
+L'approche de la session comme "conteneur de travail dynamique" offre une solution puissante et flexible, parfaitement adaptée aux réalités du pilotage d'une commission pédagogique. Elle assure la traçabilité, la structuration du travail par lots, et une communication efficace, tout en laissant au Président une maîtrise complète du calendrier et du périmètre de chaque cycle d'évaluation.
+
+
+
+**Section 10 : Algorithme de Vote et de Gestion du Consensus** **10.1. Rôle et Objectifs **
+
+Le mécanisme de vote constitue le moteur décisionnel du module de la Commission de Validation. Il est conçu pour orchestrer de manière fiable, sécurisée et traçable le processus d'évaluation collégiale des rapports. L'algorithme a pour mission de formaliser chaque vote individuel et de déterminer si un consensus, basé sur la règle métier de l'unanimité, est atteint.
+
+Les objectifs principaux de cet algorithme sont :
+
+• **Enregistrer** chaque vote de manière atomique et non répudiable.
+
+• **Déclencher** une vérification du consensus en temps réel après chaque vote soumis.
+
+• **Appliquer** la décision finale au rapport lorsque l'unanimité est constatée.
+
+• **Gérer** les situations de désaccord en plaçant le rapport dans un état de délibération et en alertant le Président de session.
+
+• **Permettre** la tenue de plusieurs tours de scrutin pour résoudre les blocages.
+
+**10.2. Architecture Fonctionnelle : Un Processus Événementiel** La logique de consensus n'est pas une tâche périodique mais un **processus événementiel**. Il est déclenché par l'action d'un membre de la commission soumettant son vote. Cette approche garantit une réactivité maximale : l'état du rapport est réévalué instantanément à chaque nouvelle information.
+
+Le processus s'articule autour de la table vote\_commission, qui agit comme le registre officiel de tous les votes. La colonne tour\_vote est fondamentale, car elle permet d'isoler les scrutins les uns des autres en cas de délibérations multiples.
+
+## **10.3. Séquence Opérationnelle Détaillée **
+
+L'algorithme se déroule en plusieurs étapes clés après chaque soumission de vote.
+
+1. **Enregistrement du Vote :**
+
+o Lorsqu'un membre soumet sa décision, une nouvelle entrée est créée dans la table vote\_commission. Cette entrée contient l'identifiant du rapport, de la session, du membre, sa décision \(id\_decision\_vote\), et le numéro du tour de scrutin en cours \(tour\_vote\). L'opération est transactionnelle pour garantir son intégrité.
+
+2. **Vérification du Scrutin :**
+
+o Immédiatement après l'enregistrement, un service applicatif est appelé. Il compte le nombre total de votes enregistrés pour le rapport et le tour de scrutin actuels.
+
+o Tant que le nombre de votes est inférieur au nombre de membres requis \(ex: 4\), l'algorithme s'arrête, en attente des votes restants.
+
+3. **Analyse du Consensus \(lorsque le scrutin est complet\) :** o Lorsque le dernier vote est enregistré, le service procède à l'analyse des décisions :
+
+▪ **Cas 1 : Unanimité Atteinte. ** Si toutes les décisions \(id\_decision\_vote\) enregistrées pour le tour sont identiques, le consensus est atteint.
+
+L'algorithme traduit alors cette décision unanime en un statut final pour le rapport \(ex: RAP\_VALID, RAP\_REFUSE, RAP\_CORRECT\) en mettant à jour la table rapport\_etudiant.
+
+▪ **Cas 2 : Désaccord Constaté. ** Si au moins une décision diffère des autres, l'unanimité a échoué. L'algorithme met alors le rapport dans un statut d'attente spécifique \(EN\_DELIBERATION\) et envoie une notification au Président de session pour l'alerter du blocage.
+
+**10.4. Gestion des Tours de Vote Multiples **
+
+En cas de désaccord, le système donne au Président les moyens de résoudre le blocage.
+
+1. **Action du Président :** L'interface du Président, alertée du désaccord, lui présente une option pour "Lancer un nouveau tour de vote".
+
+2. **Incrémentation du Tour :** Cette action ne supprime pas les votes précédents \(pour la traçabilité\). Elle prépare le système pour un nouveau scrutin en incrémentant la valeur de tour\_vote pour ce rapport \(ex: passage du tour 1 au tour 2\).
+
+3. **Réouverture du Vote :** Les membres de la commission sont notifiés et leur interface de vote pour ce rapport est réactivée, mais cette fois pour le nouveau tour. Le cycle de vote et de vérification du consensus recommence, isolé du tour précédent.
+
+## **10.5. Conclusion **
+
+Cet algorithme événementiel et transactionnel garantit un processus de décision robuste et transparent. Il assure que chaque vote est comptabilisé, que le consensus est vérifié de manière fiable, et que les situations de désaccord sont gérées par un processus formel et traçable. La gestion des tours de vote multiples offre la flexibilité nécessaire aux délibérations complexes, tout en maintenant une piste d'audit complète de l'ensemble du processus décisionnel.
+
+
+
+**Section 11 : Génération, Rédaction Collaborative et Validation du Procès-Verbal de Session** **11.1. Rôle et Objectifs **
+
+La production du Procès-Verbal \(PV\) de session est l'acte final qui formalise et archive l'ensemble des décisions prises par la commission. Cette fonctionnalité est conçue pour encadrer la création d'un document officiel, de sa rédaction initiale à sa diffusion finale, en passant par un circuit de validation collégiale.
+
+Les objectifs de ce module sont de :
+
+• **Automatiser** la compilation des données de la session pour pré-remplir le PV.
+
+• **Gérer** la rédaction du PV via un mécanisme de **propriété et de délégation**, assurant qu'un seul membre peut modifier le document à un instant T.
+
+• **Orchestrer** un circuit d'approbation interne sécurisé où chaque membre de la commission doit valider la version finale.
+
+• **Garantiser** la génération d'un document PDF authentique et sa diffusion contrôlée aux parties prenantes \(étudiants, administration\).
+
+**11.2. Architecture Fonctionnelle : Un Cycle de Vie Contrôlé** Le processus est modélisé comme une machine à états, pilotée par le statut du PV \(id\_statut\_pv\) et une notion de "propriétaire de la rédaction" \(id\_redacteur\).
+
+**11.2.1. Phase 1 : Prise en Charge et Rédaction \(Statut : PV\_BROUILLON\)** 1. **Déclenchement :** Une fois qu'une session est clôturée, l'option "Rédiger le Procès-Verbal" devient disponible pour tous les membres de la commission.
+
+2. **Prise de Propriété \("Verrouillage"\) :** Le **premier membre** qui clique sur cette option devient le **propriétaire-rédacteur** du PV. Le système exécute alors les actions suivantes
+
+   : 
+
+o Il crée une nouvelle entrée dans la table compte\_rendu avec le statut PV\_BROUILLON.
+
+o Le champ id\_redacteur est renseigné avec l'identifiant de ce premier membre.
+
+o Un squelette de document est automatiquement généré en compilant les données de la session \(participants, liste des rapports, décisions, commentaires agrégés\).
+
+3. **Interface de Rédaction :**
+
+o Le propriétaire-rédacteur accède à une interface d'édition de texte riche \(WYSIWYG\) pour compléter les sections textuelles du PV.
+
+o Pour tous les autres membres, l'option de rédaction est remplacée par un message indiquant qui est actuellement en charge de la rédaction, garantissant ainsi qu'il n'y a pas de modifications concurrentes.
+
+**11.2.2. Phase 2 : Délégation de la Rédaction \(Optionnel\)** Le propriétaire-rédacteur actuel dispose d'une fonctionnalité pour "Déléguer la rédaction". Cela lui permet de passer le relais à un autre membre de la commission. Cette action met simplement à jour le champ id\_redacteur dans la table compte\_rendu, transférant ainsi le "verrou" d'édition au nouveau membre désigné. L'opération est auditée et les parties concernées sont notifiées.
+
+**11.2.3. Phase 3 : Validation Collégiale \(Statut : PV\_SOUMIS\_VALID\)** 1. **Soumission à Validation :** Lorsque la rédaction est jugée complète, le propriétaire-rédacteur soumet le projet de PV à la validation de ses pairs. Le statut du PV passe à PV\_SOUMIS\_VALID.
+
+2. **Circuit d'Approbation :** Le document devient accessible en lecture seule pour tous les membres. Chacun doit formellement donner son avis via l'interface : o **Approuver :** L'approbation est enregistrée dans la table validation\_pv.
+
+o **Demander une Modification :** Si un membre n'est pas d'accord, il peut rejeter la version en laissant un commentaire. Cette action réinitialise le statut du PV à PV\_BROUILLON et notifie le dernier rédacteur, qui reprend la main pour effectuer les ajustements.
+
+3. **Consensus :** Le PV n'est considéré comme finalisé que lorsque le système a enregistré une approbation de la part de **tous les membres** de la commission.
+
+**11.2.4. Phase 4 : Finalisation et Diffusion \(Statut : PV\_VALID\)** Cette phase est déclenchée automatiquement dès que le consensus est atteint.
+
+1. **Génération du PDF :** Le système convertit le contenu HTML final du PV en un document PDF non modifiable, qui est ensuite archivé dans la table document\_genere.
+
+2. **Diffusion Automatisée :** Le PDF est immédiatement et automatiquement distribué aux parties prenantes principales :
+
+o **Étudiants :** Chaque étudiant dont le rapport a été traité dans la session reçoit une copie dans son espace personnel.
+
+o **Agent de Conformité :** Le personnel administratif responsable du suivi reçoit également une copie pour ses archives.
+
+3. **Diffusion Complémentaire :** L'interface permet au Président d'envoyer manuellement une copie du PDF final à des adresses email externes si nécessaire.
+
+## **11.3. Conclusion **
+
+Cette approche garantit un processus de création de document officiel à la fois collaboratif et rigoureusement contrôlé. Le mécanisme de propriété et de délégation prévient les conflits d'édition, tandis que le circuit de validation collégiale assure que le document final reflète bien le consensus de la commission. L'automatisation de la compilation et de la diffusion finale réduit la charge de travail et minimise les risques d'erreur, assurant la production d'un Procès-Verbal authentique, validé et correctement archivé.
+
+
+
+**Section 12 : Service de Génération d'Identifiants Uniques et Annuels** **12.1. Contexte et Objectifs **
+
+Dans le cadre de la plateforme "GestionMySoutenance", il a été décidé d'adopter une stratégie d'identification métier pour les entités clés \(rapports, utilisateurs, procès-verbaux, etc.\). Cette approche vise à remplacer les identifiants techniques opaques \(ex: auto-incréments, UUID\) par des clés primaires lisibles, structurées et riches en information, suivant la convention PREFIXE-ANNEE-SEQUENCE \(ex: RAP-2025-0015\).
+
+Les objectifs de ce service technique, nommé IdentifiantGenerator, sont de :
+
+• **Garantir l'unicité absolue** de chaque identifiant généré à travers toute l'application.
+
+• **Assurer la pérennité et la cohérence** de la séquence numérique.
+
+• **Gérer la remise à zéro automatique** des compteurs pour chaque nouvelle année académique.
+
+• **Fournir une solution robuste** face aux accès concurrents, prévenant toute possibilité de création de doublons \("race condition"\).
+
+**12.2. Architecture Technique : Un Compteur Transactionnel Sécurisé** La solution repose sur la synergie entre une table de base de données dédiée et un algorithme applicatif qui utilise les mécanismes transactionnels du SGBD.
+
+**12.2.1. La Table sequences : Le Registre des Compteurs** Le cœur du système est la table sequences. Sa structure est spécifiquement conçue pour gérer des compteurs annuels :
+
+• Une clé primaire composite \(nom\_sequence, annee\) garantit qu'un compteur est unique pour une année donnée \(ex: 'rapport' pour 2025\).
+
+• La colonne valeur\_actuelle stocke le dernier numéro séquentiel utilisé pour ce compteur cette année-là.
+
+Cette structure permet une remise à zéro "naturelle" des compteurs : la première demande d'identifiant pour une nouvelle année créera simplement une nouvelle ligne dans la table.
+
+**12.2.2. L'Algorithme du Service IdentifiantGenerator**
+
+Toute la logique de génération est centralisée dans un unique service applicatif. Son fonctionnement est conçu pour être atomique et sécurisé.
+
+1. **Démarrage d'une Transaction :** Chaque demande de génération d'ID initie une transaction de base de données, assurant que la séquence d'opérations est un bloc indivisible \(tout réussit ou tout échoue\).
+
+2. **Verrouillage Pessimiste de Ligne \(FOR UPDATE\) :** C'est l'étape la plus critique. Le service lit la valeur actuelle du compteur en demandant un **verrou exclusif** sur la ligne correspondante dans la table sequences. Cette instruction SELECT ... FOR UPDATE force tout autre processus tentant d'accéder à cette même ligne à se mettre en attente.
+
+3. **Incrémentation et Mise à Jour :** Une fois le verrou obtenu et la valeur lue, le service l'incrémente en mémoire. Il met ensuite à jour la base de données avec la nouvelle valeur en utilisant une commande INSERT ... ON DUPLICATE KEY UPDATE, qui gère de manière atomique la création \(pour le premier ID de l'année\) ou la mise à jour de la ligne du compteur.
+
+4. **Validation de la Transaction :** Le service exécute un COMMIT, ce qui valide la mise à jour et, surtout, **libère le verrou** sur la ligne. C'est seulement à cet instant qu'un autre processus en attente peut commencer son propre cycle de lecture-verrouillage-écriture.
+
+5. **Formatage et Retour :** Le service formate le numéro séquentiel obtenu \(ex: ajout de zéros non significatifs\) et l'assemble avec le préfixe et l'année pour retourner l'identifiant final complet.
+
+**12.3. Garantie de l'Unicité en Environnement Concurrentiel** Le choix d'une transaction avec un verrou pessimiste FOR UPDATE est délibéré et constitue la solution la plus robuste pour ce type de problématique. Il prévient les "race conditions" en sérialisant les accès au compteur : si deux requêtes arrivent simultanément, la base de données elle-même garantit que la seconde attendra la fin de la première avant de s'exécuter, assurant ainsi une séquence numérique parfaite et sans doublons.
+
+## **12.4. Conclusion **
+
+Le service IdentifiantGenerator est une fondation technique essentielle de l'application. En centralisant la logique de génération et en s'appuyant sur les mécanismes transactionnels avancés de la base de données, il fournit des identifiants à la fois significatifs pour les utilisateurs et techniquement uniques et fiables. Cette approche garantit l'intégrité des données, facilite l'audit et améliore l'ergonomie générale de la plateforme "GestionMySoutenance".
+
+
+
+**Section 13 : Traçabilité, Audit et Historisation des Données** **13.1. Introduction et Objectifs **
+
+La fiabilité et l'intégrité d'un système d'information tel que "GestionMySoutenance" reposent sur sa capacité à conserver une mémoire fidèle des actions et des évolutions de données au fil du temps. Cette section détaille les deux piliers de cette mémoire système : la piste d'audit des actions critiques et l'historisation des carrières du personnel.
+
+Les objectifs de ces fonctionnalités sont de :
+
+• **Garantir une traçabilité complète** de toutes les opérations sensibles effectuées sur la plateforme.
+
+• **Fournir un journal d'audit détaillé** pour des besoins de sécurité, de support technique et de conformité réglementaire.
+
+• **Assurer une gestion précise du cycle de vie** des carrières du personnel, permettant de reconstituer les responsabilités à n'importe quel point dans le temps.
+
+
+
+**13.2. Fonctionnalité : Piste d'Audit et Traçabilité des Actions** **13.2.1. Architecture Fonctionnelle **
+
+Le système intègre un mécanisme de journalisation centralisé, conçu pour intercepter et enregistrer de manière systématique toutes les actions critiques. Plutôt que de disperser la logique d'audit, l'application s'appuie sur un service AuditLogger ou un système d'événements découplé. Chaque fois qu'une opération sensible est réalisée, un événement est émis et capturé par un "écouteur" d'audit, qui se charge de créer une entrée détaillée.
+
+Ce mécanisme répond à la question fondamentale : **"Qui a fait quoi, sur quoi, quand et depuis** **où ?" **.
+
+## **13.2.2. Implémentation Technique **
+
+La mise en œuvre s'articule autour de la table enregistrer, dont la structure est spécifiquement conçue pour la journalisation :
+
+• **numero\_utilisateur** identifie l'auteur de l'action \(le "Qui"\).
+
+• **id\_action**
+
+catégorise l'événement \(le "Quoi", ex: CONNEXION\_REUSSIE, CHANGEMENT\_STATUT\_RAPPORT\).
+
+• **date\_action** fournit l'horodatage précis \(le "Quand"\).
+
+• **id\_entite\_concernee** et **type\_entite\_concernee** lient l'action à un objet métier spécifique \(le "Sur Quoi", ex: un rapport, une session\).
+
+• **details\_action** \(JSON\) stocke des informations contextuelles riches \(le "Comment", ex: l'ancienne et la nouvelle valeur d'un champ\).
+
+• **adresse\_ip** et **user\_agent** fournissent le contexte technique de l'action.
+
+Toutes les opérations critiques, telles que les connexions, les modifications de statut, les votes, les validations de PV ou la génération de documents, sont systématiquement interceptées et enregistrées via ce mécanisme, créant ainsi une piste d'audit exhaustive et fiable.
+
+
+
+**13.3. Fonctionnalité : Gestion du Cycle de Vie et Historisation des Carrières** **13.3.1. Architecture Fonctionnelle **
+
+Le système traite les informations de grade et de fonction du personnel non pas comme des données statiques, mais comme des **données datées**, valables pour une période définie. Cette approche permet de reconstituer avec précision l'organigramme et les responsabilités de l'établissement à n'importe quelle date passée.
+
+## **13.3.2. Implémentation Technique **
+
+Cette historisation est réalisée grâce à des tables de liaison dédiées qui enregistrent chaque changement comme une nouvelle entrée, plutôt que de modifier une entrée existante.
+
+• **Historisation des Grades :** La table acquerir associe un numero\_enseignant à un id\_grade à partir d'une date\_acquisition spécifique. Chaque promotion ou changement
+
+de grade se traduit par l'ajout d'une nouvelle ligne, conservant ainsi l'historique complet des grades obtenus.
+
+• **Historisation des Fonctions :** La table occuper associe un numero\_enseignant à une id\_fonction pour une période délimitée par une date\_debut\_occupation et une date\_fin\_occupation. Une date\_fin\_occupation nulle \(NULL\) signifie que la fonction est actuellement occupée. Mettre fin à une fonction consiste à renseigner cette date de fin, préservant ainsi l'enregistrement de la période de responsabilité.
+
+Grâce à cette modélisation, le système peut répondre à des requêtes temporelles complexes, comme "Qui était le responsable de la spécialité MIAGE en octobre 2022 ?", en interrogeant simplement les périodes de validité enregistrées dans ces tables.
+
+## **13.4. Conclusion **
+
+Ensemble, la piste d'audit et l'historisation des carrières forment l'épine dorsale de la mémoire institutionnelle de la plateforme "GestionMySoutenance". Elles garantissent non seulement la sécurité et la traçabilité des opérations quotidiennes, mais aussi la cohérence et la pérennité des données administratives sur le long terme, constituant un atout indispensable pour la gouvernance et le pilotage de l'établissement.
+
+
+
